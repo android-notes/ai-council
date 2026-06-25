@@ -23,6 +23,10 @@ AI Council is a frontend-first experiment for bringing multiple AI roles into on
 - Zustand
 - IndexedDB
 
+## License
+
+Apache-2.0
+
 ## Local Development
 
 ```bash
@@ -48,12 +52,14 @@ Before publishing, confirm GitHub Pages is set to **GitHub Actions** in the repo
 2. Try the mock flow without any API key.
 3. Add an OpenAI-compatible model connection when you want real model calls.
    - OpenAI official: `https://api.openai.com/v1`
+   - DeepSeek official: `https://api.deepseek.com`
    - OpenRouter or compatible relay: `https://openrouter.ai/api/v1`
    - Custom relay or self-hosted proxy: use its OpenAI-compatible `/v1` base URL.
-4. If the browser blocks CORS, use your own Worker, Function, local proxy, or compatible relay endpoint.
-5. Build a council lineup, optionally optimize model seats, and start the meeting.
-6. Export the result as a poster, Markdown, JSON, share title, or short-video script.
-7. Keep everything local unless you manually share an exported asset.
+4. Click **Fetch models** to load model IDs from `/models` when the endpoint supports it.
+5. If the browser blocks CORS, use your own Worker, Function, local proxy, or compatible relay endpoint.
+6. Build a council lineup, optionally optimize model seats, and start the meeting.
+7. Export the result as a poster, Markdown, JSON, share title, or short-video script.
+8. Keep everything local unless you manually share an exported asset.
 
 For deployment, see [docs/deployment.md](docs/deployment.md).
 For privacy and key-handling details, see [docs/security.md](docs/security.md).
@@ -62,6 +68,7 @@ For privacy and key-handling details, see [docs/security.md](docs/security.md).
 
 - Mock provider for a complete no-key demo flow.
 - OpenAI-compatible Chat Completions adapter for relay, aggregator, and self-hosted compatible endpoints.
+- Model discovery through OpenAI-compatible `/models` endpoints.
 - Additional adapters such as Anthropic Messages, Gemini, and OpenAI Responses are post-v1.
 
 ## Current v1 Shell

@@ -3,6 +3,7 @@ import type { ModelConnection } from "../types";
 import { askMockModel, testMockConnection } from "./mockProvider";
 import {
   askOpenAiCompatible,
+  fetchOpenAiCompatibleModels,
   testOpenAiCompatibleConnection,
 } from "./openAiCompatible";
 
@@ -31,5 +32,25 @@ export async function testModelConnection(connection: ModelConnection) {
     ok: false,
     status: "failed" as const,
     message: "This protocol is not implemented in v1.",
+  };
+}
+
+export async function fetchModelList(connection: ModelConnection) {
+  if (connection.protocol === "openai-chat-completions") {
+    return fetchOpenAiCompatibleModels(connection);
+  }
+
+  if (connection.protocol === "mock") {
+    return {
+      ok: true,
+      models: [connection.model],
+      message: "Mock model loaded.",
+    };
+  }
+
+  return {
+    ok: false,
+    models: [],
+    message: "This protocol does not support model discovery in v1.",
   };
 }

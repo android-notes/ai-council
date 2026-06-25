@@ -493,6 +493,7 @@ function ResultView() {
   const setNotice = useAppStore((state) => state.setNotice);
   const t = useMemo(() => createTranslator(language), [language]);
   const posterRef = useRef<HTMLDivElement>(null);
+  const [manualCopyText, setManualCopyText] = useState("");
 
   if (!session?.result) {
     return <EmptyState label={language === "zh" ? "还没有结果。" : "No result yet."} />;
@@ -522,11 +523,17 @@ function ResultView() {
   }
 
   async function copyMarkdown() {
-    setNotice((await copyToClipboard(markdown)) ? t("result.copied") : t("result.copyFailed"));
+    await copyShareAsset(markdown);
   }
 
   async function copyText(text: string) {
-    setNotice((await copyToClipboard(text)) ? t("result.copied") : t("result.copyFailed"));
+    await copyShareAsset(text);
+  }
+
+  async function copyShareAsset(text: string) {
+    const copied = await copyToClipboard(text);
+    setNotice(copied ? t("result.copied") : t("result.copyFailed"));
+    setManualCopyText(copied ? "" : text);
   }
 
   function exportJson() {
@@ -605,6 +612,17 @@ function ResultView() {
               <p className="result-label">{t("result.videoScript")}</p>
               <p className="mt-1 whitespace-pre-wrap">{videoScript}</p>
             </div>
+            {manualCopyText ? (
+              <label className="field-label compact">
+                <span>{t("result.manualCopy")}</span>
+                <textarea
+                  className="text-input min-h-28 resize-y font-mono text-xs"
+                  readOnly
+                  value={manualCopyText}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              </label>
+            ) : null}
           </div>
           <div className="grid gap-2">
             <button className="primary-button justify-center" onClick={() => void downloadPoster()}>
@@ -687,6 +705,7 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
   const language = useAppStore((state) => state.language);
   const saveConnection = useAppStore((state) => state.saveConnection);
   const testConnection = useAppStore((state) => state.testConnection);
+  const fetchModels = useAppStore((state) => state.fetchModels);
   const deleteConnection = useAppStore((state) => state.deleteConnection);
   const setNotice = useAppStore((state) => state.setNotice);
   const t = useMemo(() => createTranslator(language), [language]);
@@ -728,6 +747,21 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
     await testConnection(nextDraft.id);
   }
 
+  async function fetchDraftModels() {
+    const nextDraft = buildDraftFromForm();
+    if (!nextDraft) return;
+    await saveConnection(nextDraft);
+    const updatedConnection = await fetchModels(nextDraft);
+    if (updatedConnection) {
+      setDraft(updatedConnection);
+      setHeadersText(
+        updatedConnection.customHeaders
+          ? JSON.stringify(updatedConnection.customHeaders, null, 2)
+          : ""
+      );
+    }
+  }
+
   return (
     <div className="surface-panel p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -766,9 +800,26 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
                 onClick={() => {
                   setDraft({
                     ...draft,
+                    name: "DeepSeek Official",
+                    baseUrl: "https://api.deepseek.com",
+                    model: "deepseek-v4-flash",
+                    availableModels: ["deepseek-v4-flash", "deepseek-v4-pro"],
+                    customHeaders: undefined,
+                  });
+                  setHeadersText("");
+                }}
+              >
+                {t("connections.deepseekPreset")}
+              </button>
+              <button
+                className="preset-chip"
+                onClick={() => {
+                  setDraft({
+                    ...draft,
                     name: "OpenRouter Compatible",
                     baseUrl: "https://openrouter.ai/api/v1",
                     model: "openai/gpt-4.1-mini",
+                    availableModels: undefined,
                   });
                   setHeadersText(
                     JSON.stringify(
@@ -792,6 +843,7 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
                     name: "Custom Relay",
                     baseUrl: "https://your-relay.example.com/v1",
                     model: "your-model-id",
+                    availableModels: undefined,
                     customHeaders: undefined,
                   });
                   setHeadersText("");
@@ -831,7 +883,21 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
           </label>
           <label className="field-label compact">
             <span>{t("connections.model")}</span>
-            <input className="text-input" value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} />
+            {draft.availableModels && draft.availableModels.length > 0 ? (
+              <select
+                className="text-input"
+                value={draft.model}
+                onChange={(event) => setDraft({ ...draft, model: event.target.value })}
+              >
+                {draft.availableModels.map((model) => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input className="text-input" value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} />
+            )}
           </label>
           <label className="field-label compact">
             <span>{t("connections.apiKey")}</span>
@@ -867,10 +933,14 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
             />
             <span>{t("connections.storeKey")}</span>
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="secondary-button" onClick={() => void saveDraft()}>
               <Save size={16} />
               <span>{t("connections.save")}</span>
+            </button>
+            <button className="secondary-button" onClick={() => void fetchDraftModels()}>
+              <Bot size={16} />
+              <span>{t("connections.fetchModels")}</span>
             </button>
             <button className="primary-button" onClick={() => void saveAndTestDraft()}>
               <ShieldCheck size={16} />
@@ -1025,13 +1095,19 @@ async function copyToClipboard(text: string) {
     // Browser permission can deny clipboard writes in embedded or insecure contexts.
   }
 
+  if (copyViaClipboardEvent(text)) {
+    return true;
+  }
+
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.setAttribute("readonly", "true");
   textarea.style.position = "fixed";
   textarea.style.left = "-9999px";
   textarea.style.top = "0";
+  textarea.style.opacity = "0";
   document.body.appendChild(textarea);
+  textarea.focus();
   textarea.select();
   textarea.setSelectionRange(0, text.length);
 
@@ -1041,6 +1117,24 @@ async function copyToClipboard(text: string) {
     return false;
   } finally {
     document.body.removeChild(textarea);
+  }
+}
+
+function copyViaClipboardEvent(text: string) {
+  let copied = false;
+  const onCopy = (event: ClipboardEvent) => {
+    event.clipboardData?.setData("text/plain", text);
+    event.preventDefault();
+    copied = true;
+  };
+
+  try {
+    document.addEventListener("copy", onCopy);
+    return document.execCommand("copy") && copied;
+  } catch {
+    return false;
+  } finally {
+    document.removeEventListener("copy", onCopy);
   }
 }
 

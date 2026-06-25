@@ -2,6 +2,9 @@
 
 AI Council is BYOK/BYOP: users bring their own API keys or proxy URLs.
 
+Never commit API keys, relay tokens, or provider secrets into this repository.
+Provider presets such as DeepSeek or OpenRouter only fill endpoint metadata; they do not ship with keys.
+
 ## What The App Does Not Do
 
 - It does not provide model service.
@@ -30,9 +33,13 @@ Exports and poster generation must not include:
 - custom authorization headers
 - raw connection-test payloads
 
+If a key is shared publicly by mistake, rotate or revoke it immediately in the provider dashboard before using the app again.
+
 ## Browser And CORS Limits
 
 Some model providers or relay services do not allow direct browser calls. In that case, users should configure their own proxy, such as a Cloudflare Worker, Vercel Function, Netlify Function, local server, or compatible relay endpoint.
+
+Model discovery uses the selected OpenAI-compatible connection's `/models` endpoint. This request is made directly from the user's browser with the key they entered.
 
 Public CORS proxies are not recommended because they can expose keys and request content.
 

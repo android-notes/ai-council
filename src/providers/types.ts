@@ -30,3 +30,9 @@ export type ConnectionTestResult = {
   message: string;
   latencyMs?: number;
 };
+
+export type ModelListResult = {
+  ok: boolean;
+  models: string[];
+  message: string;
+};

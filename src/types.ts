@@ -42,6 +42,7 @@ export type ModelConnection = {
   baseUrl: string;
   apiKey?: string;
   model: string;
+  availableModels?: string[];
   customHeaders?: Record<string, string>;
   secretStorage: SecretStorage;
   status: "untested" | "connected" | "failed";

@@ -53,6 +53,7 @@ export type TranslationKey =
   | "result.videoScript"
   | "result.copyShareTitle"
   | "result.copyVideoScript"
+  | "result.manualCopy"
   | "result.privacy"
   | "result.hideQuestion"
   | "result.hideBackground"
@@ -66,6 +67,7 @@ export type TranslationKey =
   | "connections.subtitle"
   | "connections.add"
   | "connections.test"
+  | "connections.fetchModels"
   | "connections.save"
   | "connections.delete"
   | "connections.protocol"
@@ -79,11 +81,13 @@ export type TranslationKey =
   | "connections.headersInvalid"
   | "connections.presets"
   | "connections.openaiPreset"
+  | "connections.deepseekPreset"
   | "connections.openrouterPreset"
   | "connections.relayPreset"
   | "connections.corsHint"
   | "connections.storeKey"
   | "connections.mockReady"
+  | "connections.modelsLoaded"
   | "privacy.localData"
   | "privacy.clearAll"
   | "privacy.clearAllHint"
@@ -162,6 +166,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "result.videoScript": "Short video script",
     "result.copyShareTitle": "Copy share title",
     "result.copyVideoScript": "Copy short-video script",
+    "result.manualCopy": "Copy manually",
     "result.privacy": "Share privacy check",
     "result.hideQuestion": "Hide original question",
     "result.hideBackground": "Hide personal background",
@@ -176,6 +181,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
       "Start with the mock provider. Add one OpenAI-compatible connection when you are ready to use your own key or relay token.",
     "connections.add": "Add connection",
     "connections.test": "Test connection",
+    "connections.fetchModels": "Fetch models",
     "connections.save": "Save connection",
     "connections.delete": "Delete",
     "connections.protocol": "Protocol",
@@ -189,12 +195,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "connections.headersInvalid": "Custom headers must be a valid JSON object.",
     "connections.presets": "Quick presets",
     "connections.openaiPreset": "OpenAI official",
+    "connections.deepseekPreset": "DeepSeek official",
     "connections.openrouterPreset": "OpenRouter / relay",
     "connections.relayPreset": "Custom relay",
     "connections.corsHint":
       "If the browser blocks CORS, use your own Worker, Function, local proxy, or relay endpoint.",
     "connections.storeKey": "Save key on this device",
     "connections.mockReady": "Mock provider is ready and does not need a key.",
+    "connections.modelsLoaded": "Models loaded.",
     "privacy.localData": "Local data",
     "privacy.clearAll": "Clear all local data",
     "privacy.clearAllHint":
@@ -272,6 +280,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "result.videoScript": "短视频脚本",
     "result.copyShareTitle": "复制分享标题",
     "result.copyVideoScript": "复制短视频脚本",
+    "result.manualCopy": "手动复制内容",
     "result.privacy": "分享前隐私检查",
     "result.hideQuestion": "隐藏原始问题",
     "result.hideBackground": "隐藏个人背景",
@@ -286,6 +295,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
       "先用 Mock Provider 零门槛体验。准备好后，再添加一个 OpenAI-compatible 连接，使用自己的 Key 或中转站 Token。",
     "connections.add": "添加连接",
     "connections.test": "测试连接",
+    "connections.fetchModels": "获取模型",
     "connections.save": "保存连接",
     "connections.delete": "删除",
     "connections.protocol": "连接协议",
@@ -299,12 +309,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "connections.headersInvalid": "自定义 Headers 必须是合法 JSON 对象。",
     "connections.presets": "快速预设",
     "connections.openaiPreset": "OpenAI 官方",
+    "connections.deepseekPreset": "DeepSeek 官方",
     "connections.openrouterPreset": "OpenRouter / 中转",
     "connections.relayPreset": "自定义中转",
     "connections.corsHint":
       "如果浏览器被 CORS 拦截，请使用自己的 Worker、Function、本地代理或中转端点。",
     "connections.storeKey": "在本设备保存 Key",
     "connections.mockReady": "Mock Provider 已可用，不需要 Key。",
+    "connections.modelsLoaded": "模型列表已获取。",
     "privacy.localData": "本地数据",
     "privacy.clearAll": "清空所有本地数据",
     "privacy.clearAllHint":

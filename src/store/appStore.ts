@@ -29,7 +29,7 @@ import {
   createMockConnection,
   generateRoles,
 } from "../lib/council";
-import { askModel, testModelConnection } from "../providers";
+import { askModel, fetchModelList, testModelConnection } from "../providers";
 import { createId } from "../lib/id";
 
 type AppState = {
@@ -65,6 +65,7 @@ type AppState = {
   setSharePrivacy: (patch: Partial<SharePrivacyOptions>) => void;
   saveConnection: (connection: ModelConnection) => Promise<void>;
   testConnection: (connectionId: string) => Promise<void>;
+  fetchModels: (connection: ModelConnection) => Promise<ModelConnection | undefined>;
   addBlankConnection: () => void;
   deleteConnection: (connectionId: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
@@ -325,6 +326,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     await persistCurrentSettings(connections, get().language);
   },
 
+  fetchModels: async (connection) => {
+    const result = await fetchModelList(connection);
+    if (!result.ok) {
+      set({ notice: result.message });
+      return undefined;
+    }
+
+    const nextConnection = {
+      ...connection,
+      availableModels: result.models,
+      model: result.models.includes(connection.model)
+        ? connection.model
+        : result.models[0] ?? connection.model,
+      status: "connected" as const,
+      statusMessage: result.message,
+    };
+    const connections = upsertConnection(get().connections, nextConnection);
+    set({ connections, notice: result.message });
+    await persistCurrentSettings(connections, get().language);
+    return nextConnection;
+  },
+
   addBlankConnection: () => {
     const connection: ModelConnection = {
       id: createId("connection"),
@@ -332,6 +355,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       protocol: "openai-chat-completions",
       baseUrl: "https://api.openai.com/v1",
       model: "gpt-4.1-mini",
+      availableModels: [],
       secretStorage: "session",
       status: "untested",
     };

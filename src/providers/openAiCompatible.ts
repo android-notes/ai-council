@@ -1,4 +1,9 @@
-import type { ConnectionTestResult, ModelRequest, ModelResponse } from "./types";
+import type {
+  ConnectionTestResult,
+  ModelListResult,
+  ModelRequest,
+  ModelResponse,
+} from "./types";
 import type { ModelConnection } from "../types";
 
 export async function askOpenAiCompatible(
@@ -108,6 +113,47 @@ export async function testOpenAiCompatibleConnection(
   }
 }
 
+export async function fetchOpenAiCompatibleModels(
+  connection: ModelConnection
+): Promise<ModelListResult> {
+  try {
+    const response = await fetch(buildModelsEndpoint(connection.baseUrl), {
+      method: "GET",
+      headers: buildHeaders(connection),
+    });
+    const json = await safeJson(response);
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        models: [],
+        message: extractErrorMessage(json, response.status),
+      };
+    }
+
+    const models = extractModelIds(json);
+    return {
+      ok: models.length > 0,
+      models,
+      message:
+        models.length > 0
+          ? `${models.length} models loaded.`
+          : "No models were returned by this endpoint.",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      models: [],
+      message:
+        error instanceof TypeError
+          ? "Network or CORS blocked the models request."
+          : error instanceof Error
+            ? error.message
+            : "Unknown models request error.",
+    };
+  }
+}
+
 async function probeStreaming(connection: ModelConnection) {
   try {
     const endpoint = buildChatCompletionsEndpoint(connection.baseUrl);
@@ -148,6 +194,19 @@ function buildChatCompletionsEndpoint(baseUrl: string) {
   }
 
   return `${trimmed}/chat/completions`;
+}
+
+function buildModelsEndpoint(baseUrl: string) {
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  if (trimmed.endsWith("/models")) {
+    return trimmed;
+  }
+
+  if (trimmed.endsWith("/chat/completions")) {
+    return trimmed.replace(/\/chat\/completions$/, "/models");
+  }
+
+  return `${trimmed}/models`;
 }
 
 function buildHeaders(connection: ModelConnection) {
@@ -243,4 +302,21 @@ function extractErrorMessage(json: unknown, status: number) {
   }
 
   return `Request failed with HTTP ${status}.`;
+}
+
+function extractModelIds(json: unknown) {
+  if (!json || typeof json !== "object" || !("data" in json) || !Array.isArray(json.data)) {
+    return [];
+  }
+
+  return json.data
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object" && "id" in item && typeof item.id === "string") {
+        return item.id;
+      }
+      return "";
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
 }

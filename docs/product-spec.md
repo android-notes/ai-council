@@ -108,6 +108,7 @@ v1 provider scope:
 
 - **Mock provider**: powers the complete demo flow without requiring a key.
 - **OpenAI-compatible Chat Completions**: supports relay sites, OpenRouter-like aggregators, and compatible self-hosted endpoints.
+- **Model discovery**: fetches model IDs through OpenAI-compatible `/models` endpoints, including DeepSeek-compatible deployments when CORS allows.
 - **Post-v1 adapters**: OpenAI Responses, Anthropic Messages, Gemini, Ollama/LM Studio, and custom request templates.
 
 Role-to-model assignment should support:
@@ -127,6 +128,7 @@ Test goals:
 
 - Verify base URL and API key.
 - Verify model ID is callable.
+- Fetch available model IDs when `/models` is supported.
 - Detect whether streaming works.
 - Normalize common error messages.
 - Confirm response shape matches the selected protocol.
@@ -223,3 +225,7 @@ The user should be able to choose a default fallback policy:
 - Paying model costs for users
 
 These can be revisited after local sharing and private council usage are validated.
+
+## License
+
+The project is released under Apache-2.0.
