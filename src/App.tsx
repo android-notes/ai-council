@@ -88,8 +88,8 @@ export function App() {
   }, [notice]);
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-950">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+    <div className="app-shell min-h-screen">
+      <div className="app-frame mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
         <Header />
         {notice ? <div className="notice-bar">{notice}</div> : null}
         <main className="flex-1 py-5">
@@ -101,7 +101,7 @@ export function App() {
           {view === "connections" && <ConnectionsView />}
           {view === "history" && <HistoryView />}
         </main>
-        <footer className="flex flex-col gap-2 border-t border-stone-200 py-4 text-xs text-stone-500 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="app-footer flex flex-col gap-2 py-4 text-xs sm:flex-row sm:items-center sm:justify-between">
           <span>AI Council</span>
           <span>{t("common.localOnly")}</span>
         </footer>
@@ -118,8 +118,8 @@ function Header() {
   const t = useMemo(() => createTranslator(language), [language]);
 
   return (
-    <header className="flex flex-col gap-4 border-b border-stone-200 py-4 lg:flex-row lg:items-center lg:justify-between">
-      <button className="flex w-fit items-center gap-3 text-left" onClick={() => navigate("home")}>
+    <header className="app-header flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <button className="brand-lockup flex w-fit items-center gap-3 text-left" onClick={() => navigate("home")}>
         <span className="brand-mark">
           <Bot size={24} />
         </span>
@@ -163,12 +163,12 @@ function HomeView() {
           <Sparkles size={16} />
           <span>{language === "zh" ? "先围观，再复刻" : "Watch first, then remix"}</span>
         </div>
-        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl">
+        <h1 className="hero-title max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
           {language === "zh"
             ? "把复杂问题交给一场 AI 圆桌。"
             : "Turn hard questions into an AI roundtable."}
         </h1>
-        <p className="max-w-2xl text-base leading-7 text-stone-600">
+        <p className="hero-copy max-w-2xl text-base leading-7">
           {language === "zh"
             ? "娱乐版制造冲突和金句，决策版控制假设和风险。第一版本地运行，不建账号，不上传对话。"
             : "The playful mode creates conflict and quotes. The serious mode controls assumptions and risk. v1 runs local-first without accounts or uploaded conversations."}
@@ -188,10 +188,10 @@ function HomeView() {
           />
         </div>
       </div>
-      <aside className="surface-panel p-4">
+      <aside className="surface-panel hot-topics-panel p-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-stone-900">{t("home.tryPreset")}</h2>
-          <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-medium text-cyan-700">
+          <span className="ready-pill rounded-full px-2.5 py-1 text-xs font-medium">
             Mock ready
           </span>
         </div>
@@ -293,7 +293,7 @@ function BriefView() {
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-3 rounded-md border border-stone-200 bg-stone-50 p-3 text-sm text-stone-600 sm:flex-row sm:items-center sm:justify-between">
+          <div className="cost-strip flex flex-col gap-3 rounded-md p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
             <span>
               {t("common.estimatedCalls")}: {estimateCalls(roleCount, depth)}
             </span>
@@ -348,7 +348,7 @@ function LineupView() {
           </button>
         </div>
       </div>
-      <div className="mb-4 grid gap-3 rounded-lg border border-cyan-200 bg-cyan-50 p-4 lg:grid-cols-[180px_1fr_auto] lg:items-center">
+      <div className="diversity-panel mb-4 grid gap-3 rounded-lg p-4 lg:grid-cols-[180px_1fr_auto] lg:items-center">
         <div>
           <p className="text-sm font-semibold text-cyan-950">{t("lineup.diversity")}</p>
           <p className="mt-1 text-3xl font-semibold tracking-tight text-cyan-800">{diversity}/100</p>
@@ -359,7 +359,7 @@ function LineupView() {
           <span>{t("lineup.addModel")}</span>
         </button>
       </div>
-      <div className="mb-4 grid gap-3 rounded-lg border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_220px] md:items-center">
+      <div className="failure-panel mb-4 grid gap-3 rounded-lg p-4 md:grid-cols-[1fr_220px] md:items-center">
         <div>
           <h2 className="text-sm font-semibold text-stone-950">{t("lineup.failurePolicy")}</h2>
           <p className="mt-1 text-sm leading-6 text-stone-600">{t("lineup.failurePolicyHint")}</p>
@@ -513,7 +513,7 @@ function ResultView() {
     if (!posterRef.current) return;
     const dataUrl = await toPng(posterRef.current, {
       pixelRatio: 2,
-      backgroundColor: "#fafaf9",
+      backgroundColor: "#07010d",
     });
     const link = document.createElement("a");
     link.href = dataUrl;
