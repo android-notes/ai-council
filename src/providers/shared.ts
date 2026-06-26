@@ -235,7 +235,7 @@ function stageInstruction(request: ModelRequest) {
     return [
       "Synthesize the council into a compact final memo.",
       "Include: verdict, strongest support, strongest objection, actions, risks, and minority opinion.",
-      "Use short labeled sections or bullets so the UI can turn the answer into a poster and memo.",
+      "Use short labeled sections or bullets so the UI can turn the answer into an exportable image and memo.",
     ].join(" ");
   }
 
@@ -251,8 +251,8 @@ function stageInstruction(request: ModelRequest) {
     return "Ask or answer the hardest question for another role. Be specific and adversarial but fair.";
   }
 
-  if (request.mode === "arena") {
-    return "Give one sharp, memorable contribution for this stage. Keep it concrete and shareable.";
+  if (request.mode === "review") {
+    return "Give one concise contribution for this stage. Keep it concrete, decision-relevant, and grounded in the supplied context.";
   }
 
   return "Give one useful contribution for this stage. State assumptions, evidence gaps, and next-step implications.";

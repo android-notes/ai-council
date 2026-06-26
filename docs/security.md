@@ -26,7 +26,7 @@ If a user chooses **Save key on this device**, the key is stored in that browser
 
 Users can clear all local app data from the model connections screen. This removes local history, saved model connections, saved keys, and language preference from the current browser.
 
-Exports and poster generation must not include:
+Exports and generated images must not include:
 
 - API keys
 - proxy secrets

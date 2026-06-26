@@ -22,11 +22,24 @@ interface AiCouncilDb extends DBSchema {
   };
 }
 
-const dbPromise = openDB<AiCouncilDb>("ai-council", 1, {
-  upgrade(db) {
-    db.createObjectStore("settings", { keyPath: "id" });
-    const sessions = db.createObjectStore("sessions", { keyPath: "id" });
-    sessions.createIndex("by-updated", "updatedAt");
+const dbPromise = openDB<AiCouncilDb>("ai-council", 2, {
+  upgrade(db, oldVersion) {
+    if (oldVersion < 2) {
+      if (db.objectStoreNames.contains("settings")) {
+        db.deleteObjectStore("settings");
+      }
+      if (db.objectStoreNames.contains("sessions")) {
+        db.deleteObjectStore("sessions");
+      }
+    }
+
+    if (!db.objectStoreNames.contains("settings")) {
+      db.createObjectStore("settings", { keyPath: "id" });
+    }
+    if (!db.objectStoreNames.contains("sessions")) {
+      const sessions = db.createObjectStore("sessions", { keyPath: "id" });
+      sessions.createIndex("by-updated", "updatedAt");
+    }
   },
 });
 

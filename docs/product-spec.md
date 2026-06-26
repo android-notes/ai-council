@@ -2,20 +2,20 @@
 
 ## Core Principle
 
-The product should start with one key and one working model, then gradually invite users to upgrade their council with more models, sharper roles, and deeper discussion.
+The product should start with one key and one working model, then gradually invite users to upgrade their council with more models, clearer roles, and deeper discussion.
 
 Users should feel like they are upgrading an AI council lineup, not filling out an API configuration form.
 
 ## Main Modes
 
-### AI Debate Arena
+### Quick Review
 
-Entertainment-first mode.
+Fast evaluation mode.
 
-- Goal: make the discussion fun, conflict-heavy, and easy to share.
-- Default behavior: use preset topics or a lightweight user prompt.
-- Roles: host, aggressive supporter, skeptical opponent, conservative realist, quote maker.
-- Output: stance poster, strongest quote, split score, short-video script, copyable title.
+- Goal: help users quickly evaluate a question, trade-off, or opportunity.
+- Default behavior: start from a single user question and optional context.
+- Roles: meeting chair, case builder, evidence challenger, risk reviewer, communication editor.
+- Output: review memo, key insight, support and objection summary, action plan, risk watchlist.
 - Missing context: continue with visible assumptions instead of stopping too often.
 
 ### AI Council Room
@@ -30,11 +30,11 @@ Decision-first mode.
 
 ## Primary Flow
 
-1. User enters through a preset debate or starts a custom decision.
+1. User enters a question on the first screen.
 2. AI generates a role lineup based on topic and mode.
 3. System automatically maps roles to available model connections.
-4. User can start immediately, edit roles, or regenerate the lineup.
-5. The lineup page shows council diversity, editable role prompts, and model-failure policy.
+4. User can start immediately, or open advanced controls to edit roles, regenerate the plan, or tune model seats.
+5. The lineup page shows the meeting plan first, with council diversity, prompts, and model-failure policy disclosed only when needed.
 6. Conversation runs by stage, not by elapsed time.
 7. Host summarizes disagreements and produces the final memo from the actual discussion.
 8. Result page creates local sharing assets and suggests council upgrades.
@@ -78,7 +78,7 @@ First-run setup should support one-key usage:
 - Additional models are optional upgrades.
 - OpenAI-compatible Chat Completions should be the default protocol for relay and aggregator users.
 - v1 ships adapters for OpenAI-compatible Chat Completions, OpenAI Responses, Anthropic Messages, Gemini, Ollama/LM Studio, and Custom JSON endpoints.
-- A user-provided API key is required before a debate or council session can start.
+- A user-provided API key is required before a review or council session can start.
 
 The internal abstraction should be:
 
@@ -185,9 +185,9 @@ Sensitive values that must never be exported:
 - Custom authorization headers
 - Internal connection test payloads
 
-### 4. Share Poster Privacy Check
+### 4. Export Privacy Check
 
-Before generating a poster or long image, the app must show a privacy review step.
+Before generating an image or reusable memo, the app must show a privacy review step.
 
 Options:
 
@@ -195,9 +195,9 @@ Options:
 - Hide personal background.
 - Share conclusion only.
 - Remove emails, phone numbers, and amounts where possible.
-- Choose entertainment poster or serious memo image.
+- Export a concise decision image or a full memo.
 
-The poster is generated locally. The project should not provide an official public gallery in v1.
+Exports are generated locally. The project should not provide an official public gallery in v1.
 
 ### 5. Model Failure Fallback
 

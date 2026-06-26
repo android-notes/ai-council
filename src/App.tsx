@@ -35,16 +35,18 @@ import type {
   SessionStage,
 } from "./types";
 
-const presetTopics = {
+const suggestedQuestions = {
   en: [
-    "Should ordinary people still learn programming?",
-    "Should I quit my job to build an AI product?",
-    "Is now a good time to buy a home?",
+    "Should we launch this product as open source?",
+    "Which market should we enter first?",
+    "Should I accept this job offer?",
+    "How should we reduce churn this quarter?",
   ],
   zh: [
-    "普通人现在还要不要学编程？",
-    "我要不要辞职做一个 AI 产品？",
-    "现在是不是适合买房？",
+    "这个产品是否应该开源发布？",
+    "我们应该优先进入哪个市场？",
+    "我要不要接受这个工作机会？",
+    "这个季度应该如何降低流失？",
   ],
 };
 
@@ -156,91 +158,116 @@ function Header() {
 
 function HomeView() {
   const language = useAppStore((state) => state.language);
+  const connections = useAppStore((state) => state.connections);
   const startMode = useAppStore((state) => state.startMode);
+  const setNotice = useAppStore((state) => state.setNotice);
+  const navigate = useAppStore((state) => state.navigate);
   const t = useMemo(() => createTranslator(language), [language]);
+  const [question, setQuestion] = useState("");
+  const [selectedMode, setSelectedMode] = useState<AppMode>("review");
+  const configuredCount = connections.filter(hasApiKeyForUi).length;
+
+  function begin(nextQuestion = question) {
+    const trimmed = nextQuestion.trim();
+    if (!trimmed) {
+      setNotice(language === "zh" ? "请先输入要解决的问题。" : "Enter the question you want the council to solve.");
+      return;
+    }
+
+    startMode(selectedMode, trimmed);
+  }
 
   return (
-    <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <div className="space-y-5">
+    <section className="home-screen">
+      <div className="home-hero">
         <div className="section-kicker">
-          <Sparkles size={16} />
-          <span>{language === "zh" ? "先围观，再复刻" : "Watch first, then remix"}</span>
+          <ShieldCheck size={16} />
+          <span>{language === "zh" ? "本地优先 · 自带模型 Key" : "Local-first · Bring your own model key"}</span>
         </div>
-        <h1 className="hero-title max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-          {language === "zh"
-            ? "把复杂问题交给一场 AI 圆桌。"
-            : "Turn hard questions into an AI roundtable."}
+        <h1 className="hero-title">
+          {language === "zh" ? "你的问题，AI开会解决。" : "Your question. AI convenes."}
         </h1>
-        <p className="hero-copy max-w-2xl text-base leading-7">
+        <p className="hero-copy">
           {language === "zh"
-            ? "娱乐版制造冲突和金句，决策版控制假设和风险。第一版本地运行，不建账号，不上传对话。"
-            : "The playful mode creates conflict and quotes. The serious mode controls assumptions and risk. v1 runs local-first without accounts or uploaded conversations."}
+            ? "把一个重要问题交给多位 AI 角色审阅。系统会组织观点、质疑假设、归纳风险，并输出可执行的会议纪要。"
+            : "Give one important question to a council of AI roles. The app structures perspectives, challenges assumptions, reviews risk, and returns an actionable memo."}
         </p>
-        <div className="grid gap-3 md:grid-cols-2">
-          <ModePanel
-            mode="arena"
-            title={t("home.arena.title")}
-            body={t("home.arena.body")}
-            onStart={() => startMode("arena")}
-          />
-          <ModePanel
-            mode="council"
-            title={t("home.council.title")}
-            body={t("home.council.body")}
-            onStart={() => startMode("council")}
-          />
+
+        <div className="question-console">
+          <label className="field-label">
+            <span>{t("brief.topic")}</span>
+            <textarea
+              className="question-input"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder={
+                language === "zh"
+                  ? "例如：这个产品是否应该先做开源版本？"
+                  : "Example: Should we release this product as open source first?"
+              }
+            />
+          </label>
+          <div className="mode-switch" aria-label={language === "zh" ? "会议模式" : "Meeting mode"}>
+            {(["review", "council"] as AppMode[]).map((mode) => (
+              <button
+                className={clsx(selectedMode === mode && "selected")}
+                key={mode}
+                onClick={() => setSelectedMode(mode)}
+              >
+                <span>{mode === "review" ? t("home.review.title") : t("home.council.title")}</span>
+                <small>{mode === "review" ? t("home.review.body") : t("home.council.body")}</small>
+              </button>
+            ))}
+          </div>
+          <button className="primary-button justify-center" onClick={() => begin()}>
+            <Play size={16} />
+            <span>{t("home.start")}</span>
+          </button>
         </div>
       </div>
-      <aside className="surface-panel hot-topics-panel p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-stone-900">{t("home.tryPreset")}</h2>
-          <span className="ready-pill rounded-full px-2.5 py-1 text-xs font-medium">
-            API key required
-          </span>
+
+      <aside className="home-side-panel">
+        <div className="readiness-card">
+          <p className="connection-eyebrow">{language === "zh" ? "模型连接" : "Model access"}</p>
+          <h2>{configuredCount > 0 ? (language === "zh" ? "已就绪" : "Ready") : t("connections.requiredTitle")}</h2>
+          <p>
+            {configuredCount > 0
+              ? language === "zh"
+                ? `已配置 ${configuredCount} 个可用模型连接。`
+                : `${configuredCount} model connection${configuredCount > 1 ? "s" : ""} configured.`
+              : language === "zh"
+                ? "首次运行会在需要时弹出配置窗口。Key 只保存在当前浏览器。"
+                : "Setup appears only when needed. Keys stay in this browser."}
+          </p>
+          <button className="secondary-button" onClick={() => navigate("connections")}>
+            <Settings size={16} />
+            <span>{configuredCount > 0 ? t("nav.connections") : t("connections.add")}</span>
+          </button>
         </div>
-        <div className="space-y-2">
-          {presetTopics[language].map((topic) => (
+
+        <details className="suggestion-drawer">
+          <summary>
+            <span>{t("home.tryPreset")}</span>
+            <ChevronRight size={16} />
+          </summary>
+          <div className="suggestion-list">
+          {suggestedQuestions[language].map((topic) => (
             <button
               key={topic}
-              className="preset-row"
-              onClick={() => startMode("arena", topic)}
+              className="suggestion-row"
+              onClick={() => {
+                setQuestion(topic);
+                begin(topic);
+              }}
             >
               <span>{topic}</span>
               <ChevronRight size={16} />
             </button>
           ))}
-        </div>
+          </div>
+        </details>
       </aside>
     </section>
-  );
-}
-
-function ModePanel({
-  mode,
-  title,
-  body,
-  onStart,
-}: {
-  mode: AppMode;
-  title: string;
-  body: string;
-  onStart: () => void;
-}) {
-  const language = useAppStore((state) => state.language);
-  const t = useMemo(() => createTranslator(language), [language]);
-
-  return (
-    <div className={clsx("mode-panel", mode === "arena" ? "mode-arena" : "mode-council")}>
-      <div className="flex items-center gap-2">
-        <span className="mode-dot" />
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-      </div>
-      <p className="min-h-[72px] text-sm leading-6 text-stone-600">{body}</p>
-      <button className="primary-button mt-auto" onClick={onStart}>
-        <Play size={16} />
-        <span>{t("home.start")}</span>
-      </button>
-    </div>
   );
 }
 
@@ -254,13 +281,18 @@ function BriefView() {
   const setBrief = useAppStore((state) => state.setBrief);
   const buildLineup = useAppStore((state) => state.buildLineup);
   const t = useMemo(() => createTranslator(language), [language]);
-  const roleCount = mode === "arena" ? 5 : 6;
+  const roleCount = mode === "review" ? 5 : 6;
 
   return (
     <section className="mx-auto max-w-4xl">
       <BackButton onClick={() => navigate("home")} />
-      <div className="surface-panel p-5 sm:p-6">
+      <div className="surface-panel brief-panel p-5 sm:p-6">
         <h1 className="text-2xl font-semibold tracking-tight">{t("brief.title")}</h1>
+        <p className="mt-2 text-sm leading-6 text-stone-600">
+          {language === "zh"
+            ? "补充必要背景即可。更细的会议参数可以保持默认，需要时再展开。"
+            : "Add only the context that changes the answer. Meeting parameters can stay on their defaults until you need them."}
+        </p>
         <div className="mt-5 grid gap-4">
           <label className="field-label">
             <span>{t("brief.topic")}</span>
@@ -280,30 +312,40 @@ function BriefView() {
               placeholder={language === "zh" ? "补充预算、时间、限制、风险承受能力。" : "Add budget, timing, constraints, and risk tolerance."}
             />
           </label>
-          <div>
-            <span className="mb-2 block text-sm font-medium text-stone-700">{t("brief.depth")}</span>
-            <div className="segmented-control">
-              {(["quick", "standard", "deep"] as DepthPreset[]).map((item) => (
-                <button
-                  key={item}
-                  className={clsx(depth === item && "selected")}
-                  onClick={() => setBrief({ depth: item })}
-                >
-                  {item === "quick" && t("brief.quick")}
-                  {item === "standard" && t("brief.standard")}
-                  {item === "deep" && t("brief.deep")}
-                </button>
-              ))}
+          <details className="progressive-panel">
+            <summary>
+              <span>{language === "zh" ? "会议设置" : "Meeting settings"}</span>
+              <span className="summary-meta">
+                {estimateCalls(roleCount, depth)} {language === "zh" ? "次调用" : "calls"} · {depthLimits[depth].costLevel}
+              </span>
+            </summary>
+            <div className="progressive-body">
+              <div>
+                <span className="mb-2 block text-sm font-medium text-stone-700">{t("brief.depth")}</span>
+                <div className="segmented-control">
+                  {(["quick", "standard", "deep"] as DepthPreset[]).map((item) => (
+                    <button
+                      key={item}
+                      className={clsx(depth === item && "selected")}
+                      onClick={() => setBrief({ depth: item })}
+                    >
+                      {item === "quick" && t("brief.quick")}
+                      {item === "standard" && t("brief.standard")}
+                      {item === "deep" && t("brief.deep")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="cost-strip flex flex-col gap-3 rounded-md p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  {t("common.estimatedCalls")}: {estimateCalls(roleCount, depth)}
+                </span>
+                <span>
+                  {t("common.cost")}: {depthLimits[depth].costLevel}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="cost-strip flex flex-col gap-3 rounded-md p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              {t("common.estimatedCalls")}: {estimateCalls(roleCount, depth)}
-            </span>
-            <span>
-              {t("common.cost")}: {depthLimits[depth].costLevel}
-            </span>
-          </div>
+          </details>
           <button className="primary-button justify-center" onClick={buildLineup}>
             <Bot size={16} />
             <span>{t("brief.build")}</span>
@@ -316,6 +358,8 @@ function BriefView() {
 
 function LineupView() {
   const language = useAppStore((state) => state.language);
+  const mode = useAppStore((state) => state.mode);
+  const depth = useAppStore((state) => state.depth);
   const roles = useAppStore((state) => state.roles);
   const connections = useAppStore((state) => state.connections);
   const updateRole = useAppStore((state) => state.updateRole);
@@ -328,95 +372,179 @@ function LineupView() {
   const t = useMemo(() => createTranslator(language), [language]);
   const diversity = calculateDiversityScore(roles);
   const usableConnections = connections.filter(hasApiKeyForUi);
+  const activeSeatCount = new Set(roles.map((role) => role.modelConnectionId).filter(Boolean)).size;
+  const roleCount = mode === "review" ? 5 : 6;
 
   return (
-    <section>
+    <section className="lineup-screen">
       <BackButton onClick={() => navigate("brief")} />
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="lineup-hero">
         <div>
+          <p className="connection-eyebrow">{language === "zh" ? "会议预览" : "Meeting preview"}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{t("lineup.title")}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-stone-600">{t("lineup.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
-          <button className="secondary-button" onClick={autoAssignRoles}>
-            <Sparkles size={16} />
-            <span>{t("lineup.autoAssign")}</span>
-          </button>
-          <button className="secondary-button" onClick={regenerateRoles}>
-            <RotateCcw size={16} />
-            <span>{t("lineup.regenerate")}</span>
-          </button>
+        <div className="lineup-actions">
           <button className="primary-button" onClick={() => void runSession()}>
             <Play size={16} />
             <span>{t("lineup.start")}</span>
           </button>
         </div>
       </div>
-      <div className="diversity-panel mb-4 grid gap-3 rounded-lg p-4 lg:grid-cols-[180px_1fr_auto] lg:items-center">
+
+      <div className="lineup-summary-grid">
         <div>
-          <p className="text-sm font-semibold text-cyan-950">{t("lineup.diversity")}</p>
-          <p className="mt-1 text-3xl font-semibold tracking-tight text-cyan-800">{diversity}/100</p>
+          <span>{roles.length || roleCount}</span>
+          <small>{language === "zh" ? "会议角色" : "roles"}</small>
         </div>
-        <p className="text-sm leading-6 text-cyan-900">{t("lineup.diversityHint")}</p>
-        <button className="secondary-button bg-white" onClick={() => navigate("connections")}>
-          <Plus size={16} />
-          <span>{t("lineup.addModel")}</span>
-        </button>
+        <div>
+          <span>{activeSeatCount || 1}</span>
+          <small>{language === "zh" ? "模型席位" : "model seats"}</small>
+        </div>
+        <div>
+          <span>{estimateCalls(roles.length || roleCount, depth)}</span>
+          <small>{language === "zh" ? "预计调用" : "estimated calls"}</small>
+        </div>
       </div>
-      <div className="failure-panel mb-4 grid gap-3 rounded-lg p-4 md:grid-cols-[1fr_220px] md:items-center">
-        <div>
-          <h2 className="text-sm font-semibold text-stone-950">{t("lineup.failurePolicy")}</h2>
-          <p className="mt-1 text-sm leading-6 text-stone-600">{t("lineup.failurePolicyHint")}</p>
+
+      <details className="progressive-panel lineup-advanced">
+        <summary>
+          <span>{language === "zh" ? "高级会议设置" : "Advanced meeting settings"}</span>
+          <span className="summary-meta">{t("lineup.diversity")}: {diversity}/100</span>
+        </summary>
+        <div className="progressive-body">
+          <div className="diversity-panel grid gap-3 rounded-lg p-4 lg:grid-cols-[180px_1fr_auto] lg:items-center">
+            <div>
+              <p className="text-sm font-semibold text-cyan-950">{t("lineup.diversity")}</p>
+              <p className="mt-1 text-3xl font-semibold tracking-tight text-cyan-800">{diversity}/100</p>
+            </div>
+            <p className="text-sm leading-6 text-cyan-900">{t("lineup.diversityHint")}</p>
+            <button className="secondary-button bg-white" onClick={() => navigate("connections")}>
+              <Plus size={16} />
+              <span>{t("lineup.addModel")}</span>
+            </button>
+          </div>
+          <div className="failure-panel grid gap-3 rounded-lg p-4 md:grid-cols-[1fr_220px] md:items-center">
+            <div>
+              <h2 className="text-sm font-semibold text-stone-950">{t("lineup.failurePolicy")}</h2>
+              <p className="mt-1 text-sm leading-6 text-stone-600">{t("lineup.failurePolicyHint")}</p>
+            </div>
+            <select
+              className="text-input"
+              value={fallbackPolicy}
+              onChange={(event) => setFallbackPolicy(event.target.value as FallbackPolicy)}
+            >
+              <option value="balanced">{t("lineup.fallbackBalanced")}</option>
+              <option value="conservative">{t("lineup.fallbackConservative")}</option>
+              <option value="fast">{t("lineup.fallbackFast")}</option>
+            </select>
+          </div>
+          <div className="lineup-utility-row">
+            <button className="secondary-button" onClick={autoAssignRoles}>
+              <Sparkles size={16} />
+              <span>{t("lineup.autoAssign")}</span>
+            </button>
+            <button className="secondary-button" onClick={regenerateRoles}>
+              <RotateCcw size={16} />
+              <span>{t("lineup.regenerate")}</span>
+            </button>
+          </div>
         </div>
+      </details>
+
+      <div className="role-list">
+        {roles.map((role, index) => (
+          <RoleCard
+            key={role.id}
+            role={role}
+            index={index}
+            language={language}
+            connections={connections}
+            usableConnections={usableConnections}
+            updateRole={updateRole}
+            t={t}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RoleCard({
+  role,
+  index,
+  language,
+  connections,
+  usableConnections,
+  updateRole,
+  t,
+}: {
+  role: ReturnType<typeof useAppStore.getState>["roles"][number];
+  index: number;
+  language: "en" | "zh";
+  connections: ModelConnection[];
+  usableConnections: ModelConnection[];
+  updateRole: (id: string, patch: Partial<ReturnType<typeof useAppStore.getState>["roles"][number]>) => void;
+  t: ReturnType<typeof createTranslator>;
+}) {
+  const selectedConnection = connections.find((connection) => connection.id === role.modelConnectionId);
+
+  return (
+    <article className="role-card">
+      <div className="role-summary">
+        <span className="role-index">{String(index + 1).padStart(2, "0")}</span>
+        <div>
+          <h2>{role.name}</h2>
+          <p>{role.duty}</p>
+        </div>
+        <span className="role-model-pill">
+          {selectedConnection ? `${selectedConnection.name} / ${selectedConnection.model}` : t("lineup.model")}
+        </span>
+      </div>
+      <label className="field-label compact">
+        <span>{t("lineup.model")}</span>
         <select
           className="text-input"
-          value={fallbackPolicy}
-          onChange={(event) => setFallbackPolicy(event.target.value as FallbackPolicy)}
+          value={role.modelConnectionId}
+          onChange={(event) => updateRole(role.id, { modelConnectionId: event.target.value })}
         >
-          <option value="balanced">{t("lineup.fallbackBalanced")}</option>
-          <option value="conservative">{t("lineup.fallbackConservative")}</option>
-          <option value="fast">{t("lineup.fallbackFast")}</option>
+          {roleConnectionOptions(usableConnections, connections, role.modelConnectionId).map((connection) => (
+            <option key={connection.id} value={connection.id}>
+              {connection.name} / {connection.model}
+            </option>
+          ))}
         </select>
-      </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {roles.map((role) => (
-          <div className="role-card" key={role.id}>
+      </label>
+      <details className="advanced-role-panel">
+        <summary>{language === "zh" ? "编辑角色与提示词" : "Edit role and prompt"}</summary>
+        <div className="role-edit-grid">
+          <label className="field-label compact">
+            <span>{language === "zh" ? "角色名称" : "Role name"}</span>
             <input
               className="role-title-input"
               value={role.name}
               onChange={(event) => updateRole(role.id, { name: event.target.value })}
             />
+          </label>
+          <label className="field-label compact">
+            <span>{language === "zh" ? "职责" : "Responsibility"}</span>
             <textarea
               className="role-duty-input"
               value={role.duty}
               onChange={(event) => updateRole(role.id, { duty: event.target.value })}
             />
-            <label className="field-label compact">
-              <span>{t("lineup.model")}</span>
-              <select
-                className="text-input"
-                value={role.modelConnectionId}
-                onChange={(event) => updateRole(role.id, { modelConnectionId: event.target.value })}
-              >
-                {roleConnectionOptions(usableConnections, connections, role.modelConnectionId).map((connection) => (
-                  <option key={connection.id} value={connection.id}>
-                    {connection.name} / {connection.model}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <details className="advanced-role-panel">
-              <summary>{t("lineup.prompt")}</summary>
-              <textarea
-                className="role-prompt-input"
-                value={role.prompt}
-                onChange={(event) => updateRole(role.id, { prompt: event.target.value })}
-              />
-            </details>
-          </div>
-        ))}
-      </div>
-    </section>
+          </label>
+          <label className="field-label compact">
+            <span>{t("lineup.prompt")}</span>
+            <textarea
+              className="role-prompt-input"
+              value={role.prompt}
+              onChange={(event) => updateRole(role.id, { prompt: event.target.value })}
+            />
+          </label>
+        </div>
+      </details>
+    </article>
   );
 }
 
@@ -496,7 +624,7 @@ function ResultView() {
   const startMode = useAppStore((state) => state.startMode);
   const setNotice = useAppStore((state) => state.setNotice);
   const t = useMemo(() => createTranslator(language), [language]);
-  const posterRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [manualCopyText, setManualCopyText] = useState("");
 
   if (!session?.result) {
@@ -507,17 +635,17 @@ function ResultView() {
   const markdown = sessionToMarkdown(session, privacy, language);
   const shareTitle =
     language === "zh"
-      ? `我让 AI Council 讨论了：${session.topic}`
-      : `I asked AI Council to debate: ${session.topic}`;
-  const videoScript =
+      ? `AI Council 会议纪要：${session.topic}`
+      : `AI Council memo: ${session.topic}`;
+  const briefingSummary =
     language === "zh"
-      ? `开场：我把「${session.topic}」交给 AI Council。\n冲突：支持方认为机会窗口存在，反方提醒关键事实不足。\n反转：最狠一句是「${result.sharpestQuote}」\n结尾：最终建议是先做小规模验证。`
-      : `Hook: I gave AI Council this question: "${session.topic}".\nConflict: supporters saw an opportunity window, while skeptics warned that key facts were missing.\nTurn: the sharpest line was "${result.sharpestQuote}".\nClose: the verdict is to run a small validation first.`;
+      ? `问题：${session.topic}\n结论：${result.verdict}\n关键洞察：${result.keyInsight}\n下一步：${result.actions[0] ?? "先做一次低成本验证。"}`
+      : `Question: ${session.topic}\nVerdict: ${result.verdict}\nKey insight: ${result.keyInsight}\nNext step: ${result.actions[0] ?? "Run a low-cost validation first."}`;
 
-  async function downloadPoster() {
-    if (!posterRef.current) return;
+  async function downloadImage() {
+    if (!exportRef.current) return;
     try {
-      const dataUrl = await toPng(posterRef.current, {
+      const dataUrl = await toPng(exportRef.current, {
         pixelRatio: 2,
         backgroundColor: "#07010d",
       });
@@ -560,7 +688,7 @@ function ResultView() {
     <section className="grid gap-4 lg:grid-cols-[1fr_340px]">
       <div>
         <BackButton onClick={() => navigate("home")} />
-        <div ref={posterRef} className="result-poster">
+        <div ref={exportRef} className="result-export">
           <div className="mb-5 flex items-center justify-between border-b border-stone-200 pb-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">AI Council</p>
@@ -592,7 +720,10 @@ function ResultView() {
                 <ResultBlock title={t("result.minority")} body={result.minorityOpinion} />
               </div>
             ) : null}
-            <section className="quote-strip">{result.sharpestQuote}</section>
+            <section className="insight-strip">
+              <span>{language === "zh" ? "关键洞察" : "Key insight"}</span>
+              <p>{result.keyInsight}</p>
+            </section>
           </div>
         </div>
       </div>
@@ -605,15 +736,15 @@ function ResultView() {
           <PrivacyToggle label={t("result.redactSensitive")} checked={privacy.redactSensitive} onChange={(value) => setSharePrivacy({ redactSensitive: value })} />
         </div>
         <div className="surface-panel p-4">
-          <h2 className="mb-3 text-sm font-semibold">{language === "zh" ? "传播素材" : "Share kit"}</h2>
+          <h2 className="mb-3 text-sm font-semibold">{language === "zh" ? "导出与复用" : "Export and reuse"}</h2>
           <div className="mb-4 space-y-3 rounded-md border border-stone-200 bg-stone-50 p-3 text-sm leading-6 text-stone-700">
             <div>
               <p className="result-label">{t("result.shareTitle")}</p>
               <p className="mt-1 font-medium text-stone-950">{shareTitle}</p>
             </div>
             <div>
-              <p className="result-label">{t("result.videoScript")}</p>
-              <p className="mt-1 whitespace-pre-wrap">{videoScript}</p>
+              <p className="result-label">{t("result.briefingSummary")}</p>
+              <p className="mt-1 whitespace-pre-wrap">{briefingSummary}</p>
             </div>
             {manualCopyText ? (
               <label className="field-label compact">
@@ -628,9 +759,9 @@ function ResultView() {
             ) : null}
           </div>
           <div className="grid gap-2">
-            <button className="primary-button justify-center" onClick={() => void downloadPoster()}>
+            <button className="primary-button justify-center" onClick={() => void downloadImage()}>
               <Download size={16} />
-              <span>{t("result.downloadPoster")}</span>
+              <span>{t("result.downloadImage")}</span>
             </button>
             <button className="secondary-button justify-center" onClick={() => void copyMarkdown()}>
               <Save size={16} />
@@ -640,9 +771,9 @@ function ResultView() {
               <Save size={16} />
               <span>{t("result.copyShareTitle")}</span>
             </button>
-            <button className="secondary-button justify-center" onClick={() => void copyText(videoScript)}>
+            <button className="secondary-button justify-center" onClick={() => void copyText(briefingSummary)}>
               <Save size={16} />
-              <span>{t("result.copyVideoScript")}</span>
+              <span>{t("result.copyBriefingSummary")}</span>
             </button>
             <button className="secondary-button justify-center" onClick={exportJson}>
               <FileJson size={16} />
@@ -664,11 +795,14 @@ function ResultView() {
 
 function ApiKeyModal() {
   const language = useAppStore((state) => state.language);
+  const view = useAppStore((state) => state.view);
+  const topic = useAppStore((state) => state.topic);
   const connections = useAppStore((state) => state.connections);
   const saveConnection = useAppStore((state) => state.saveConnection);
   const testConnection = useAppStore((state) => state.testConnection);
   const fetchModels = useAppStore((state) => state.fetchModels);
   const closeApiKeyModal = useAppStore((state) => state.closeApiKeyModal);
+  const navigate = useAppStore((state) => state.navigate);
   const setNotice = useAppStore((state) => state.setNotice);
   const t = useMemo(() => createTranslator(language), [language]);
   const [draft, setDraft] = useState<ModelConnection>(() =>
@@ -711,6 +845,9 @@ function ApiKeyModal() {
     if (!nextDraft) return;
     await saveConnection(nextDraft);
     closeApiKeyModal();
+    if (view === "home" && topic.trim()) {
+      navigate("brief");
+    }
   }
 
   async function fetchDraftModels() {
@@ -815,7 +952,7 @@ function ApiKeyModal() {
           </label>
         </div>
 
-        <details className="connection-details" open>
+        <details className="connection-details">
           <summary>
             <span>{language === "zh" ? "Endpoint 与协议" : "Endpoint and protocol"}</span>
             <ChevronRight size={16} />
@@ -956,8 +1093,8 @@ function ConnectionsView() {
             <h2>{language === "zh" ? "从一个 Key 开始" : "Start with one key"}</h2>
             <p>
               {language === "zh"
-                ? "先让一个模型扮演所有角色。需要更尖锐的分歧时，再把关键角色升级到不同供应商。"
-                : "Let one model play every role first. Upgrade key roles to different providers when you need sharper disagreement."}
+                ? "先用一个模型完成会议。需要更广模型覆盖时，再把关键角色分配给不同供应商。"
+                : "Start with one model for the full meeting. Add providers later when you need broader model coverage."}
             </p>
           </div>
           <div className="sidecar-meter">
@@ -1075,8 +1212,8 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
   }
 
   return (
-    <div className="connection-card">
-      <div className="connection-card-header">
+    <details className="connection-card" open={!hasApiKeyForUi(connection) || connection.status !== "connected"}>
+      <summary className="connection-card-header">
         <div>
           <p className="connection-eyebrow">{protocolLabel(draft.protocol)}</p>
           <h2>{draft.name}</h2>
@@ -1086,7 +1223,7 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
           <StatusIcon status={connection.status} />
           <span>{connection.statusMessage ?? statusText(connection.status, t)}</span>
         </span>
-      </div>
+      </summary>
       <div className="connection-flow">
           <div className="provider-dock" aria-label={t("connections.presets")}>
             {presets.map((preset) => (
@@ -1221,7 +1358,7 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
             </button>
           </div>
       </div>
-    </div>
+    </details>
   );
 }
 

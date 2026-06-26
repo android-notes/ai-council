@@ -29,7 +29,7 @@ export async function askGemini(request: ModelRequest): Promise<ModelResponse> {
         },
       ],
       generationConfig: {
-        temperature: request.mode === "arena" ? 0.85 : 0.45,
+        temperature: request.mode === "review" ? 0.85 : 0.45,
         maxOutputTokens: request.maxOutputTokens,
       },
     }),

@@ -44,7 +44,7 @@ export async function askOllama(request: ModelRequest): Promise<ModelResponse> {
       ],
       stream: false,
       options: {
-        temperature: request.mode === "arena" ? 0.85 : 0.45,
+        temperature: request.mode === "review" ? 0.85 : 0.45,
         num_predict: request.maxOutputTokens,
       },
     }),

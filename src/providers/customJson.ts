@@ -22,7 +22,7 @@ export async function askCustomJson(request: ModelRequest): Promise<ModelRespons
     request.connection,
     buildSystemPrompt(request),
     buildUserPrompt(request),
-    request.mode === "arena" ? 0.85 : 0.45,
+    request.mode === "review" ? 0.85 : 0.45,
     request.maxOutputTokens
   );
   const response = await fetch(buildCustomEndpoint(request.connection.baseUrl), {

@@ -25,7 +25,7 @@ export async function askOpenAiResponses(request: ModelRequest): Promise<ModelRe
       model: request.connection.model,
       instructions: buildSystemPrompt(request),
       input: buildUserPrompt(request),
-      temperature: request.mode === "arena" ? 0.85 : 0.45,
+      temperature: request.mode === "review" ? 0.85 : 0.45,
       max_output_tokens: request.maxOutputTokens,
       stream: false,
     }),

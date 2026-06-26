@@ -1,6 +1,6 @@
 # AI Council
 
-AI Council is a frontend-first experiment for bringing multiple AI roles into one debate room: a playful debate arena for shareable arguments, and a serious council room for structured decisions.
+AI Council is a frontend-first tool for bringing multiple AI roles into one structured meeting: quick reviews for fast judgment, and decision meetings for deeper analysis.
 
 ![AI Council home screen](docs/assets/ai-council-home.jpg)
 
@@ -8,10 +8,10 @@ AI Council is a frontend-first experiment for bringing multiple AI roles into on
 
 ## Product Direction
 
-- **AI Debate Arena**: entertainment-first, optimized for conflict, quotes, posters, and replayable topics.
-- **AI Council Room**: decision-first, optimized for context gathering, risk review, dissent, and action plans.
+- **Quick Review**: fast evaluation for trade-offs, assumptions, risks, and a first actionable memo.
+- **Decision Meeting**: deeper analysis for strategy, stakeholders, dissent, risk review, and next steps.
 - **BYOK / BYOP**: users bring their own API keys or proxy URLs. The project does not provide model service, store API keys, or pay model costs.
-- **Local-first sharing**: v1 avoids an official public gallery. Posters, long images, copied summaries, and history stay local unless the user shares them manually.
+- **Local-first exports**: v1 avoids an official public gallery. Image exports, Markdown, JSON, copied summaries, and history stay local unless the user shares them manually.
 - **Bilingual by default**: the UI supports Chinese and English, auto-selecting the browser language while keeping a manual switch.
 
 ## Tech Stack
@@ -61,7 +61,7 @@ Before publishing, confirm GitHub Pages is set to **GitHub Actions** in the repo
 3. Click **Fetch models** to load model IDs when the endpoint supports it.
 4. If the browser blocks CORS, use your own Worker, Function, local proxy, or compatible relay endpoint.
 5. Build a council lineup. New roles default to a configured model seat with an API key.
-6. Export the result as a poster, Markdown, JSON, share title, or short-video script.
+6. Export the result as an image, Markdown, JSON, memo title, or briefing summary.
 7. Keep everything local unless you manually share an exported asset.
 
 For deployment, see [docs/deployment.md](docs/deployment.md).
@@ -80,10 +80,10 @@ For privacy and key-handling details, see [docs/security.md](docs/security.md).
 ## Current v1 Shell
 
 - Chinese and English UI with browser-language auto detection and manual switching.
-- API-key-gated debate/council flow from topic input to role lineup, staged meeting, result page, and local history.
+- API-key-gated review/decision flow from question input to meeting plan, staged meeting, result page, and local history.
 - Model connection screen with OpenAI-compatible, OpenAI Responses, Anthropic, Gemini, Ollama/LM Studio, and Custom JSON connection testing.
 - Editable role prompts, model seats, and model-failure fallback policy before each session.
-- Local privacy-first result sharing through poster download, Markdown copy, JSON export, share title, and short-video script.
+- Local privacy-first result export through image download, Markdown copy, JSON export, memo title, and briefing summary.
 - Council diversity scoring to nudge users from one model seat toward richer multi-model lineups.
 
 ## What AI Council Does Not Provide

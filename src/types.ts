@@ -1,6 +1,6 @@
 export type Language = "en" | "zh";
 
-export type AppMode = "arena" | "council";
+export type AppMode = "review" | "council";
 
 export type AppView =
   | "home"
@@ -75,7 +75,7 @@ export type CouncilResult = {
   supportScore: number;
   strongestSupport: string;
   strongestObjection: string;
-  sharpestQuote: string;
+  keyInsight: string;
   assumptions: string[];
   actions: string[];
   risks: string[];

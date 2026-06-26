@@ -78,7 +78,7 @@ type AppState = {
 export const useAppStore = create<AppState>((set, get) => ({
   language: detectLanguage(),
   view: "home",
-  mode: "arena",
+  mode: "review",
   topic: "",
   context: "",
   depth: "standard",
@@ -107,7 +107,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       language,
       sessions,
-      connections: cleanStoredConnections(settings?.connections ?? []),
+      connections: settings?.connections ?? [],
       fallbackPolicy: settings?.fallbackPolicy ?? "balanced",
       ...(latestResult
         ? {
@@ -148,7 +148,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         mode,
         topic,
         context: "",
-        depth: mode === "arena" ? "quick" : "standard",
+        depth: mode === "review" ? "quick" : "standard",
         roles: [],
         currentSession: undefined,
         apiKeyModalOpen: true,
@@ -161,7 +161,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       mode,
       topic,
       context: "",
-      depth: mode === "arena" ? "quick" : "standard",
+      depth: mode === "review" ? "quick" : "standard",
       roles: [],
       currentSession: undefined,
       view: "brief",
@@ -220,8 +220,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         notice:
           language === "zh"
-            ? "先添加一个带 Key、已连接或本地可用的正式模型席位。"
-            : "Add one real model seat with a key, connected status, or local endpoint first.",
+            ? "请先添加一个带 API Key 的模型连接。"
+            : "Add a model connection with an API key first.",
       });
       return;
     }
@@ -492,7 +492,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       language: detectLanguage(),
       view: "home",
-      mode: "arena",
+      mode: "review",
       topic: "",
       context: "",
       depth: "standard",
@@ -507,10 +507,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     window.location.hash = "";
   },
 }));
-
-function cleanStoredConnections(connections: ModelConnection[]) {
-  return connections.filter((item) => (item.protocol as string) !== "mock");
-}
 
 function upsertConnection(connections: ModelConnection[], connection: ModelConnection) {
   const exists = connections.some((item) => item.id === connection.id);
@@ -559,8 +555,8 @@ function rolesHaveUsableSeats(roles: CouncilRole[], connections: ModelConnection
 
 function keyRequiredMessage(language: Language) {
   return language === "zh"
-    ? "请先配置 API Key，才能开始使用 AI Council。"
-    : "Configure an API key before using AI Council.";
+    ? "请先配置模型 API Key 以继续。"
+    : "Configure a model API key to continue.";
 }
 
 function isUnconfiguredDefaultConnection(connection: ModelConnection) {

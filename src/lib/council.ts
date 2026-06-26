@@ -16,15 +16,15 @@ export function generateRoles(
   modelConnectionId = ""
 ): CouncilRole[] {
   const isZh = language === "zh";
-  const roleSet =
-    mode === "arena"
-      ? [
-          role("host", isZh ? "主持人" : "Host", isZh ? "控场、追问、宣布分歧" : "Frames the debate, pushes tension, and names the split.", "host"),
-          role("support", isZh ? "激进支持派" : "Bold Supporter", isZh ? "把支持理由讲到最强" : "Makes the strongest possible supportive case.", "support"),
-          role("skeptic", isZh ? "毒舌反方" : "Sharp Skeptic", isZh ? "专门拆台，指出自欺和漏洞" : "Challenges assumptions and calls out weak reasoning.", "skeptic"),
-          role("risk", isZh ? "现实保守派" : "Realist", isZh ? "盯住代价、资源和失败后果" : "Focuses on costs, constraints, and downside.", "risk"),
-          role("creative", isZh ? "金句官" : "Quote Maker", isZh ? "负责制造可分享的反转和金句" : "Turns the debate into memorable, shareable lines.", "creative"),
-        ]
+	  const roleSet =
+	    mode === "review"
+	      ? [
+	          role("host", isZh ? "会议主持" : "Meeting Chair", isZh ? "定义问题、推进流程、归纳分歧" : "Frames the question, moves the discussion forward, and names the trade-offs.", "host"),
+	          role("support", isZh ? "支持论证" : "Case Builder", isZh ? "提出支持方案的最强理由和适用条件" : "Builds the strongest case for the proposed direction and its conditions.", "support"),
+	          role("skeptic", isZh ? "反证审查" : "Evidence Challenger", isZh ? "寻找关键反例、漏洞和未经验证的假设" : "Challenges assumptions, weak evidence, and missing counterexamples.", "skeptic"),
+	          role("risk", isZh ? "风险评估" : "Risk Reviewer", isZh ? "评估成本、约束、失败后果和可逆性" : "Reviews cost, constraints, failure modes, and reversibility.", "risk"),
+	          role("creative", isZh ? "沟通摘要" : "Communication Editor", isZh ? "把讨论整理成清晰、可复用且不夸张的摘要" : "Turns the discussion into a clear, reusable, non-sensational summary.", "creative"),
+	        ]
       : [
           role("host", isZh ? "主持人" : "Host", isZh ? "定义问题、控制流程、综合结论" : "Defines the question, controls the process, and synthesizes.", "host"),
           role("strategy", isZh ? "战略顾问" : "Strategy Advisor", isZh ? "判断方向是否值得投入" : "Judges whether the direction is worth pursuing.", "support"),
@@ -100,13 +100,13 @@ export function composeResult(
 ): CouncilResult {
   const isZh = language === "zh";
   const score = calculateSupportScore(session);
-  const title = isZh
-    ? session.mode === "arena"
-      ? "AI 吵架场结论"
-      : "AI 智囊室决策备忘录"
-    : session.mode === "arena"
-      ? "AI Debate Verdict"
-      : "AI Council Decision Memo";
+	  const title = isZh
+	    ? session.mode === "review"
+	      ? "AI 快速评审纪要"
+	      : "AI 决策会议纪要"
+	    : session.mode === "review"
+	      ? "AI Review Memo"
+	      : "AI Council Decision Memo";
   const summary = latestMessage(session, ["host"], "summary") ?? latestMessage(session, ["host"]);
   const support = latestMessage(session, ["support", "strategy"]);
   const objection = latestMessage(session, ["skeptic", "risk"]);
@@ -135,11 +135,11 @@ export function composeResult(
         ? "反方的最强理由是：关键事实不足时，信心很容易被情绪和想象放大。"
         : "The strongest objection: when key facts are missing, confidence can be inflated by emotion and imagination."
     ),
-    sharpestQuote: usefulSentence(
-      creative?.content ?? objection?.content,
-      isZh
-        ? "你现在缺的不是勇气，是一个能失败得起的验证。"
-        : "What you lack is not courage, but a validation you can afford to fail."
+	    keyInsight: usefulSentence(
+	      creative?.content ?? objection?.content,
+	      isZh
+	        ? "先把不可逆的大决定，拆成一次可承受的小验证。"
+	        : "Turn the irreversible decision into a validation you can afford to run."
     ),
     assumptions: isZh
       ? ["目标足够重要", "资源有限", "短期内可以做低成本验证"]
@@ -192,18 +192,18 @@ function buildRolePrompt(
   language: Language
 ) {
   if (language === "zh") {
-    return `你是「${name}」。你的职责是：${duty}。本场讨论主题是「${topic}」。${
-      mode === "arena"
-        ? "你可以犀利、有戏剧张力，但不要编造事实。"
-        : "你必须克制、结构化，明确假设和风险，不替用户做最终决定。"
-    }`;
+	    return `你是「${name}」。你的职责是：${duty}。本场讨论主题是「${topic}」。${
+	      mode === "review"
+	        ? "你要简洁、直接、可执行；可以指出分歧，但不要夸张或编造事实。"
+	        : "你必须克制、结构化，明确假设和风险，不替用户做最终决定。"
+	    }`;
   }
 
-  return `You are "${name}". Your duty: ${duty}. The topic is "${topic}". ${
-    mode === "arena"
-      ? "You may be sharp and dramatic, but do not invent facts."
-      : "Be restrained and structured. State assumptions and risks. Do not make the final decision for the user."
-  }`;
+	  return `You are "${name}". Your duty: ${duty}. The topic is "${topic}". ${
+	    mode === "review"
+	      ? "Be concise, direct, and actionable. Name disagreement without exaggerating or inventing facts."
+	      : "Be restrained and structured. State assumptions and risks. Do not make the final decision for the user."
+	  }`;
 }
 
 function latestMessage(
@@ -314,7 +314,7 @@ function unique(items: string[]) {
 }
 
 function calculateSupportScore(session: CouncilSession) {
-  const base = session.mode === "arena" ? 58 : 64;
+  const base = session.mode === "review" ? 58 : 64;
   const failedCount = session.messages.filter((message) => message.failed).length;
   const score = base - failedCount * 4;
   return Math.max(35, Math.min(82, score));
