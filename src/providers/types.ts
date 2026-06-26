@@ -17,10 +17,13 @@ export type ModelRequest = {
   language: Language;
   previousMessages: CouncilMessage[];
   maxOutputTokens: number;
+  continuationOf?: string;
 };
 
 export type ModelResponse = {
   content: string;
+  truncated?: boolean;
+  finishReason?: string;
   raw?: unknown;
 };
 

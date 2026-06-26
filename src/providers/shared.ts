@@ -124,11 +124,25 @@ export function buildSystemPrompt(request: ModelRequest) {
     `You are ${request.role.name}.`,
     request.role.prompt,
     `Respond in ${languageName}.`,
-    "Stay inside your role. Be concise, concrete, and avoid pretending to know facts not supplied by the user.",
+    "Stay inside your role. Be concrete and avoid pretending to know facts not supplied by the user.",
+    "Write complete thoughts. Do not end with an unfinished sentence, teaser, or ellipsis.",
   ].join("\n");
 }
 
 export function buildUserPrompt(request: ModelRequest) {
+  if (request.continuationOf) {
+    return [
+      `Mode: ${request.mode}`,
+      `Stage: ${request.stage}`,
+      `Topic: ${request.topic}`,
+      `Context: ${request.context || "No extra context provided."}`,
+      "Your previous answer was cut off by the model output limit.",
+      "Continue exactly from where it stopped. Do not restart, summarize, or repeat the previous answer.",
+      "Finish the remaining thought in complete sentences.",
+      `Previous partial answer:\n${request.continuationOf}`,
+    ].join("\n\n");
+  }
+
   const prior = request.previousMessages
     .slice(-6)
     .map((message) => `${message.roleName}: ${message.content}`)
@@ -262,27 +276,28 @@ function extractContentValue(content: unknown): string {
 function stageInstruction(request: ModelRequest) {
   if (request.stage === "summary") {
     return [
-      "Synthesize the council into a compact final memo.",
+      "Synthesize the council into a complete final memo.",
       "Include: verdict, strongest support, strongest objection, actions, risks, and minority opinion.",
-      "Use short labeled sections or bullets so the UI can turn the answer into an exportable image and memo.",
+      "Use labeled sections or bullets so the UI can turn the answer into an exportable image and memo.",
+      "Finish every section; do not leave placeholders or trailing ellipses.",
     ].join(" ");
   }
 
   if (request.stage === "vote") {
-    return "Vote with a clear stance, confidence level, and one decisive reason.";
+    return "Vote with a clear stance, confidence level, and one decisive reason. Finish the sentence completely.";
   }
 
   if (request.stage === "riskReview") {
-    return "Name the highest-risk assumptions, failure signals, and reversible next steps.";
+    return "Name the highest-risk assumptions, failure signals, and reversible next steps. Use complete bullets.";
   }
 
   if (request.stage === "crossExam") {
-    return "Ask or answer the hardest question for another role. Be specific and adversarial but fair.";
+    return "Ask or answer the hardest question for another role. Be specific and adversarial but fair. Use complete sentences.";
   }
 
   if (request.mode === "review") {
-    return "Give one concise contribution for this stage. Keep it concrete, decision-relevant, and grounded in the supplied context.";
+    return "Give one complete contribution for this stage. Keep it concrete, decision-relevant, and grounded in the supplied context. Prefer 2-4 bullets over a single clipped sentence.";
   }
 
-  return "Give one useful contribution for this stage. State assumptions, evidence gaps, and next-step implications.";
+  return "Give one complete contribution for this stage. State assumptions, evidence gaps, and next-step implications. Prefer 2-5 bullets or short labeled sections.";
 }

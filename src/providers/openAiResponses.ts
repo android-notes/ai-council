@@ -42,7 +42,14 @@ export async function askOpenAiResponses(request: ModelRequest): Promise<ModelRe
     throw new Error("Protocol mismatch: response did not contain text output.");
   }
 
-  return { content, raw: json };
+  const finishReason = extractResponsesFinishReason(json);
+
+  return {
+    content,
+    finishReason,
+    truncated: finishReason === "max_output_tokens" || finishReason === "incomplete",
+    raw: json,
+  };
 }
 
 export async function testOpenAiResponsesConnection(
@@ -164,4 +171,26 @@ function buildResponsesModelsEndpoint(baseUrl: string) {
   }
 
   return `${trimmed}/models`;
+}
+
+function extractResponsesFinishReason(json: unknown) {
+  if (!json || typeof json !== "object") {
+    return undefined;
+  }
+
+  if (
+    "incomplete_details" in json &&
+    json.incomplete_details &&
+    typeof json.incomplete_details === "object" &&
+    "reason" in json.incomplete_details &&
+    typeof json.incomplete_details.reason === "string"
+  ) {
+    return json.incomplete_details.reason;
+  }
+
+  if ("status" in json && typeof json.status === "string" && json.status === "incomplete") {
+    return "incomplete";
+  }
+
+  return undefined;
 }

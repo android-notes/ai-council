@@ -42,7 +42,14 @@ export async function askCustomJson(request: ModelRequest): Promise<ModelRespons
     throw new Error("Protocol mismatch: custom response did not contain readable text.");
   }
 
-  return { content, raw: json };
+  const finishReason = extractCustomFinishReason(json);
+
+  return {
+    content,
+    finishReason,
+    truncated: ["length", "max_tokens", "max_output_tokens"].includes(finishReason ?? ""),
+    raw: json,
+  };
 }
 
 export async function testCustomJsonConnection(
@@ -174,6 +181,27 @@ function buildCustomPayload(
 
 function buildCustomEndpoint(baseUrl: string) {
   return trimBaseUrl(baseUrl);
+}
+
+function extractCustomFinishReason(json: unknown) {
+  if (!json || typeof json !== "object") {
+    return undefined;
+  }
+
+  for (const field of ["finish_reason", "finishReason", "stop_reason", "done_reason"]) {
+    if (field in json && typeof json[field as keyof typeof json] === "string") {
+      return json[field as keyof typeof json] as string;
+    }
+  }
+
+  if ("choices" in json && Array.isArray(json.choices)) {
+    const first = json.choices[0];
+    if (first && typeof first === "object" && "finish_reason" in first && typeof first.finish_reason === "string") {
+      return first.finish_reason;
+    }
+  }
+
+  return undefined;
 }
 
 function buildCustomModelsEndpoint(baseUrl: string) {

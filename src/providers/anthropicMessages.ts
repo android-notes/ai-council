@@ -46,7 +46,17 @@ export async function askAnthropicMessages(request: ModelRequest): Promise<Model
     throw new Error("Protocol mismatch: response did not contain Anthropic content text.");
   }
 
-  return { content, raw: json };
+  const finishReason =
+    json && typeof json === "object" && "stop_reason" in json && typeof json.stop_reason === "string"
+      ? json.stop_reason
+      : undefined;
+
+  return {
+    content,
+    finishReason,
+    truncated: finishReason === "max_tokens",
+    raw: json,
+  };
 }
 
 export async function testAnthropicMessagesConnection(

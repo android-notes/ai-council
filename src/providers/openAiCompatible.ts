@@ -52,7 +52,17 @@ export async function askOpenAiCompatible(
     throw new Error("Protocol mismatch: missing choices[0].message.content.");
   }
 
-  return { content, raw: json };
+  const finishReason =
+    typeof json?.choices?.[0]?.finish_reason === "string"
+      ? json.choices[0].finish_reason
+      : undefined;
+
+  return {
+    content,
+    finishReason,
+    truncated: finishReason === "length" || finishReason === "max_tokens",
+    raw: json,
+  };
 }
 
 export async function testOpenAiCompatibleConnection(

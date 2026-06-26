@@ -324,7 +324,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         const connection = findConnection(role.modelConnectionId, get().connections);
 
         try {
-          const response = await askWithRetry({
+          const response = await askCompleteWithRetry({
             connection,
             role,
             mode,
@@ -640,6 +640,70 @@ async function askWithRetry(
   }
 
   throw lastError;
+}
+
+async function askCompleteWithRetry(
+  request: Parameters<typeof askModel>[0],
+  retries: number
+) {
+  const response = await askWithRetry(request, retries);
+  let content = response.content.trim();
+
+  if (!response.truncated) {
+    return { ...response, content };
+  }
+
+  try {
+    const continuation = await askWithRetry(
+      {
+        ...request,
+        continuationOf: content,
+      },
+      retries
+    );
+    content = mergeContinuation(content, continuation.content);
+    if (continuation.truncated) {
+      content = appendTruncationNotice(content, request.language);
+    }
+    return {
+      ...continuation,
+      content,
+      truncated: continuation.truncated,
+      finishReason: continuation.finishReason ?? response.finishReason,
+    };
+  } catch {
+    return {
+      ...response,
+      content: appendTruncationNotice(content, request.language),
+    };
+  }
+}
+
+function mergeContinuation(firstPart: string, continuation: string) {
+  const next = continuation.trim();
+  if (!next) return firstPart;
+
+  const normalizedFirst = firstPart.trim();
+  if (normalizedFirst.includes(next)) {
+    return normalizedFirst;
+  }
+
+  const maxOverlap = Math.min(240, normalizedFirst.length, next.length);
+  for (let overlap = maxOverlap; overlap >= 24; overlap -= 1) {
+    if (normalizedFirst.endsWith(next.slice(0, overlap))) {
+      return `${normalizedFirst}${next.slice(overlap)}`;
+    }
+  }
+
+  return `${normalizedFirst}\n\n${next}`;
+}
+
+function appendTruncationNotice(content: string, language: Language) {
+  const notice =
+    language === "zh"
+      ? "\n\n> 这条发言触达了模型输出上限，自动续写失败。建议提高深度或换用更长输出上限的模型。"
+      : "\n\n> This turn hit the model output limit, and the automatic continuation failed. Try a deeper run or a model with a higher output limit.";
+  return content.includes(notice.trim()) ? content : `${content}${notice}`;
 }
 
 async function persistCurrentSettings(

@@ -46,7 +46,14 @@ export async function askGemini(request: ModelRequest): Promise<ModelResponse> {
     throw new Error("Protocol mismatch: response did not contain Gemini candidate text.");
   }
 
-  return { content, raw: json };
+  const finishReason = extractGeminiFinishReason(json);
+
+  return {
+    content,
+    finishReason,
+    truncated: finishReason === "MAX_TOKENS",
+    raw: json,
+  };
 }
 
 export async function testGeminiConnection(connection: ModelConnection): Promise<ConnectionTestResult> {
@@ -214,6 +221,19 @@ function extractGeminiText(json: unknown) {
     })
     .filter(Boolean)
     .join("\n");
+}
+
+function extractGeminiFinishReason(json: unknown) {
+  if (!json || typeof json !== "object" || !("candidates" in json) || !Array.isArray(json.candidates)) {
+    return undefined;
+  }
+
+  const first = json.candidates[0];
+  if (!first || typeof first !== "object" || !("finishReason" in first)) {
+    return undefined;
+  }
+
+  return typeof first.finishReason === "string" ? first.finishReason : undefined;
 }
 
 function extractGeminiModels(json: unknown) {

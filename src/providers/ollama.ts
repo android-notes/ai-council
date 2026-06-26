@@ -61,7 +61,17 @@ export async function askOllama(request: ModelRequest): Promise<ModelResponse> {
     throw new Error("Protocol mismatch: response did not contain Ollama message content.");
   }
 
-  return { content, raw: json };
+  const finishReason =
+    json && typeof json === "object" && "done_reason" in json && typeof json.done_reason === "string"
+      ? json.done_reason
+      : undefined;
+
+  return {
+    content,
+    finishReason,
+    truncated: finishReason === "length",
+    raw: json,
+  };
 }
 
 export async function testOllamaConnection(connection: ModelConnection): Promise<ConnectionTestResult> {
