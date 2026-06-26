@@ -106,6 +106,5 @@ export type SessionLimits = {
 export type SharePrivacyOptions = {
   hideQuestion: boolean;
   hideBackground: boolean;
-  conclusionOnly: boolean;
   redactSensitive: boolean;
 };

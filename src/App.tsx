@@ -24,12 +24,14 @@ import { toPng } from "html-to-image";
 import clsx from "clsx";
 import { createTranslator, nextLanguage } from "./i18n";
 import { depthLimits, estimateCalls } from "./lib/depth";
-import { sessionToMarkdown } from "./lib/markdown";
+import { renderMarkdownToHtml, sessionToMarkdown } from "./lib/markdown";
 import { createId } from "./lib/id";
+import { redactSensitiveText } from "./lib/redact";
 import { useAppStore } from "./store/appStore";
 import type {
   AppMode,
   AppView,
+  CouncilSession,
   DepthPreset,
   FallbackPolicy,
   ModelConnection,
@@ -677,7 +679,7 @@ function SessionView() {
                 <span className="font-medium">{message.roleName}</span>
                 <span>{formatStage(message.stage, language)}</span>
               </div>
-              <p>{message.content}</p>
+              <MarkdownContent value={message.content} />
             </article>
           ))}
           {isRunning ? <div className="loading-line" /> : null}
@@ -694,6 +696,61 @@ function SessionView() {
           ))}
         </div>
       </aside>
+    </section>
+  );
+}
+
+function MarkdownContent({ value, className }: { value: string; className?: string }) {
+  const html = useMemo(() => renderMarkdownToHtml(value), [value]);
+
+  if (!html) {
+    return null;
+  }
+
+  return (
+    <div
+      className={clsx("markdown-content", className)}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+function ConversationLog({
+  messages,
+  language,
+  cleanText,
+}: {
+  messages: CouncilSession["messages"];
+  language: "en" | "zh";
+  cleanText: (value: string) => string;
+}) {
+  if (messages.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="conversation-export">
+      <div>
+        <h2 className="result-label">{language === "zh" ? "对话记录" : "Conversation log"}</h2>
+        <p className="conversation-export-note">
+          {language === "zh"
+            ? "完整保留每轮 AI 发言，方便复盘观点如何形成。"
+            : "Every AI turn is kept so the reasoning path remains reviewable."}
+        </p>
+      </div>
+      <div className="conversation-log">
+        {messages.map((message, index) => (
+          <article className={clsx("conversation-message", message.failed && "failed")} key={message.id}>
+            <div className="conversation-message-meta">
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{cleanText(message.roleName)}</strong>
+              <span>{formatStage(message.stage, language)}</span>
+              {message.failed ? <span>{language === "zh" ? "失败" : "Failed"}</span> : null}
+            </div>
+            <MarkdownContent value={cleanText(message.content)} />
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
@@ -716,6 +773,8 @@ function ResultView() {
 
   const result = session.result;
   const markdown = sessionToMarkdown(session, privacy, language);
+  const cleanText = (value: string) =>
+    privacy.redactSensitive ? redactSensitiveText(value) : value;
   const shareTitle =
     language === "zh"
       ? `AI Council 会议纪要：${session.topic}`
@@ -730,7 +789,7 @@ function ResultView() {
     try {
       const dataUrl = await toPng(exportRef.current, {
         pixelRatio: 2,
-        backgroundColor: "#07010d",
+        backgroundColor: "#f5f5f5",
       });
       const blob = await (await fetch(dataUrl)).blob();
       downloadBlob(blob, "ai-council-result.png");
@@ -775,7 +834,7 @@ function ResultView() {
           <div className="mb-5 flex items-center justify-between border-b border-stone-200 pb-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">AI Council</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">{result.title}</h1>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">{cleanText(result.title)}</h1>
             </div>
             <span className="score-pill">{result.supportScore}%</span>
           </div>
@@ -783,30 +842,33 @@ function ResultView() {
             {!privacy.hideQuestion ? (
               <section>
                 <h2 className="result-label">{language === "zh" ? "问题" : "Question"}</h2>
-                <p className="result-text">{session.topic}</p>
+                <MarkdownContent className="result-text" value={cleanText(session.topic)} />
+              </section>
+            ) : null}
+            {session.context && !privacy.hideBackground ? (
+              <section>
+                <h2 className="result-label">{language === "zh" ? "背景" : "Context"}</h2>
+                <MarkdownContent className="result-text" value={cleanText(session.context)} />
               </section>
             ) : null}
             <section>
               <h2 className="result-label">{language === "zh" ? "结论" : "Verdict"}</h2>
-              <p className="result-text large">{result.verdict}</p>
+              <MarkdownContent className="result-text large" value={cleanText(result.verdict)} />
             </section>
-            {!privacy.conclusionOnly ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <ResultBlock title={language === "zh" ? "最强支持理由" : "Strongest support"} body={result.strongestSupport} />
-                <ResultBlock title={language === "zh" ? "最强反对理由" : "Strongest objection"} body={result.strongestObjection} />
-              </div>
-            ) : null}
-            {!privacy.conclusionOnly ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                <ResultList title={t("result.actions")} items={result.actions} />
-                <ResultList title={t("result.risks")} items={result.risks} />
-                <ResultBlock title={t("result.minority")} body={result.minorityOpinion} />
-              </div>
-            ) : null}
+            <div className="grid gap-4 md:grid-cols-2">
+              <ResultBlock title={language === "zh" ? "最强支持理由" : "Strongest support"} body={cleanText(result.strongestSupport)} />
+              <ResultBlock title={language === "zh" ? "最强反对理由" : "Strongest objection"} body={cleanText(result.strongestObjection)} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <ResultList title={t("result.actions")} items={result.actions.map(cleanText)} />
+              <ResultList title={t("result.risks")} items={result.risks.map(cleanText)} />
+              <ResultBlock title={t("result.minority")} body={cleanText(result.minorityOpinion)} />
+            </div>
             <section className="insight-strip">
               <span>{language === "zh" ? "关键洞察" : "Key insight"}</span>
-              <p>{result.keyInsight}</p>
+              <MarkdownContent value={cleanText(result.keyInsight)} />
             </section>
+            <ConversationLog messages={session.messages} language={language} cleanText={cleanText} />
           </div>
         </div>
       </div>
@@ -815,7 +877,6 @@ function ResultView() {
           <h2 className="mb-3 text-sm font-semibold">{t("result.privacy")}</h2>
           <PrivacyToggle label={t("result.hideQuestion")} checked={privacy.hideQuestion} onChange={(value) => setSharePrivacy({ hideQuestion: value })} />
           <PrivacyToggle label={t("result.hideBackground")} checked={privacy.hideBackground} onChange={(value) => setSharePrivacy({ hideBackground: value })} />
-          <PrivacyToggle label={t("result.conclusionOnly")} checked={privacy.conclusionOnly} onChange={(value) => setSharePrivacy({ conclusionOnly: value })} />
           <PrivacyToggle label={t("result.redactSensitive")} checked={privacy.redactSensitive} onChange={(value) => setSharePrivacy({ redactSensitive: value })} />
         </div>
         <div className="surface-panel p-4">
@@ -2246,7 +2307,7 @@ function ResultBlock({ title, body }: { title: string; body: string }) {
   return (
     <section className="rounded-md border border-stone-200 bg-white p-4">
       <h2 className="result-label">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-stone-700">{body}</p>
+      <MarkdownContent className="mt-2 text-sm leading-6 text-stone-700" value={body} />
     </section>
   );
 }
@@ -2259,7 +2320,7 @@ function ResultList({ title, items }: { title: string; items: string[] }) {
         {items.map((item) => (
           <li className="flex gap-2" key={item}>
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-600" />
-            <span>{item}</span>
+            <MarkdownContent className="result-list-item" value={item} />
           </li>
         ))}
       </ul>

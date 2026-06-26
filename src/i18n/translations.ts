@@ -58,7 +58,6 @@ export type TranslationKey =
   | "result.privacy"
   | "result.hideQuestion"
   | "result.hideBackground"
-  | "result.conclusionOnly"
   | "result.redactSensitive"
   | "result.saved"
   | "result.copied"
@@ -182,7 +181,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "result.privacy": "Export privacy check",
     "result.hideQuestion": "Hide original question",
     "result.hideBackground": "Hide personal background",
-    "result.conclusionOnly": "Share conclusion only",
     "result.redactSensitive": "Redact emails, phones, and amounts",
     "result.saved": "Saved locally",
     "result.copied": "Copied.",
@@ -307,7 +305,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "result.privacy": "导出前隐私检查",
     "result.hideQuestion": "隐藏原始问题",
     "result.hideBackground": "隐藏个人背景",
-    "result.conclusionOnly": "只分享结论",
     "result.redactSensitive": "移除邮箱、电话和金额",
     "result.saved": "已保存到本地",
     "result.copied": "已复制。",

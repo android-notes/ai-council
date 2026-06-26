@@ -2045,3 +2045,152 @@ body {
 .history-row:hover {
   background: #fef3c7;
 }
+
+.markdown-content {
+  @apply text-sm leading-7;
+  color: #525252;
+}
+
+.markdown-content > * + * {
+  margin-top: 0.65rem;
+}
+
+.markdown-content p {
+  margin: 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  @apply font-black;
+  color: #262626;
+}
+
+.markdown-content h1 {
+  @apply text-2xl leading-tight;
+}
+
+.markdown-content h2 {
+  @apply text-xl leading-tight;
+}
+
+.markdown-content h3 {
+  @apply text-base leading-snug;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  @apply grid gap-1 pl-5;
+}
+
+.markdown-content ul {
+  list-style: disc;
+}
+
+.markdown-content ol {
+  list-style: decimal;
+}
+
+.markdown-content li {
+  padding-left: 0.1rem;
+}
+
+.markdown-content blockquote {
+  @apply rounded-md px-3 py-2;
+  border-left: 4px solid #facc15;
+  color: #44403c;
+  background: #fef3c7;
+}
+
+.markdown-content code {
+  @apply rounded px-1.5 py-0.5 font-mono text-[0.85em];
+  border: 1px solid rgba(250, 204, 21, 0.42);
+  color: #262626;
+  background: #fef9c3;
+}
+
+.markdown-content pre {
+  @apply overflow-x-auto rounded-md p-3;
+  border: 1px solid rgba(212, 212, 212, 0.95);
+  background: #fafafa;
+}
+
+.markdown-content pre code {
+  @apply block p-0 text-xs leading-6;
+  border: 0;
+  background: transparent;
+}
+
+.markdown-content a {
+  color: #ea580c;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.message-row .markdown-content {
+  color: #525252;
+}
+
+.message-row .markdown-content p {
+  @apply whitespace-pre-wrap text-sm leading-7;
+}
+
+.result-text.markdown-content {
+  @apply mt-2;
+  color: #525252;
+}
+
+.result-text.large.markdown-content {
+  @apply text-lg font-semibold leading-8;
+  color: #262626;
+}
+
+.result-text.large.markdown-content p {
+  @apply text-lg font-semibold leading-8;
+}
+
+.result-list-item.markdown-content {
+  @apply min-w-0 flex-1 text-sm leading-6;
+  color: #525252;
+}
+
+.result-list-item.markdown-content > * + * {
+  margin-top: 0.35rem;
+}
+
+.conversation-export {
+  @apply grid gap-3 pt-2;
+}
+
+.conversation-export-note {
+  @apply mt-1 text-sm leading-6;
+  color: #78716c;
+}
+
+.conversation-log {
+  @apply grid gap-3;
+}
+
+.conversation-message {
+  @apply rounded-md p-4;
+  border: 1px solid rgba(212, 212, 212, 0.95);
+  background: #fafafa;
+}
+
+.conversation-message.failed {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: #fee2e2;
+}
+
+.conversation-message-meta {
+  @apply mb-2 flex flex-wrap items-center gap-2 text-xs uppercase;
+  letter-spacing: 0;
+  color: #ca8a04;
+}
+
+.conversation-message-meta strong {
+  color: #262626;
+}

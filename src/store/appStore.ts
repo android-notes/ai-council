@@ -92,7 +92,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   sharePrivacy: {
     hideQuestion: false,
     hideBackground: false,
-    conclusionOnly: false,
     redactSensitive: true,
   },
 
