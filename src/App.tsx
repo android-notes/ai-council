@@ -54,16 +54,20 @@ const CONNECTION_ACTION_TIMEOUT_MS = 10_000;
 
 const suggestedQuestions = {
   en: [
-    "Should we launch this product as open source?",
-    "Which market should we enter first?",
-    "Should I accept this job offer?",
-    "How should we reduce churn this quarter?",
+    "Should I change jobs or stay where I am?",
+    "Should I buy a home now or keep renting?",
+    "How should I plan a major family expense?",
+    "Should I repay debt, save, or invest extra cash?",
+    "Is this side project worth serious time and money?",
+    "How should I handle a hard conversation with family?",
   ],
   zh: [
-    "这个产品是否应该开源发布？",
-    "我们应该优先进入哪个市场？",
-    "我要不要接受这个工作机会？",
-    "这个季度应该如何降低流失？",
+    "我要不要换工作，还是继续留在现在的公司？",
+    "现在适合买房，还是继续租房观望？",
+    "家里一笔大额开支应该怎么规划？",
+    "手里有一笔闲钱，应该还贷、存起来还是投资？",
+    "这个副业或创业想法值得认真投入吗？",
+    "我该如何和家人进行一次困难沟通？",
   ],
 };
 
@@ -267,14 +271,11 @@ function Header() {
 
 function HomeView() {
   const language = useAppStore((state) => state.language);
-  const connections = useAppStore((state) => state.connections);
   const startMode = useAppStore((state) => state.startMode);
   const setNotice = useAppStore((state) => state.setNotice);
-  const navigate = useAppStore((state) => state.navigate);
   const t = useMemo(() => createTranslator(language), [language]);
   const [question, setQuestion] = useState("");
   const [selectedMode, setSelectedMode] = useState<AppMode>("review");
-  const configuredCount = connections.filter(hasApiKeyForUi).length;
 
   function begin(nextQuestion = question) {
     const trimmed = nextQuestion.trim();
@@ -325,8 +326,8 @@ function HomeView() {
               onChange={(event) => setQuestion(event.target.value)}
               placeholder={
                 language === "zh"
-                  ? "例如：这个产品是否应该先做开源版本？"
-                  : "Example: Should we release this product as open source first?"
+                  ? "例如：我要不要换工作，还是继续留在现在的公司？"
+                  : "Example: Should I change jobs or stay where I am?"
               }
             />
           </label>
@@ -348,26 +349,6 @@ function HomeView() {
           </button>
         </div>
       </div>
-
-      <aside className="home-side-panel">
-        <div className="readiness-card">
-          <p className="connection-eyebrow">{language === "zh" ? "模型连接" : "Model access"}</p>
-          <h2>{configuredCount > 0 ? (language === "zh" ? "已就绪" : "Ready") : t("connections.requiredTitle")}</h2>
-          <p>
-            {configuredCount > 0
-              ? language === "zh"
-                ? `已配置 ${configuredCount} 个可用模型连接。`
-                : `${configuredCount} model connection${configuredCount > 1 ? "s" : ""} configured.`
-              : language === "zh"
-                ? "首次运行会在需要时弹出配置窗口。Key 只保存在当前浏览器。"
-                : "Setup appears only when needed. Keys stay in this browser."}
-          </p>
-          <button className="secondary-button" onClick={() => navigate("connections")}>
-            <Settings size={16} />
-            <span>{configuredCount > 0 ? t("nav.connections") : t("connections.add")}</span>
-          </button>
-        </div>
-      </aside>
     </section>
   );
 }
