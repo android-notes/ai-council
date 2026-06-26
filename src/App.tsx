@@ -8,6 +8,7 @@ import {
   Download,
   FileJson,
   History,
+  Info,
   Languages,
   MessageSquareText,
   Play,
@@ -44,9 +45,10 @@ type ActionFeedback = {
   tone: "neutral" | "success" | "error";
   message: string;
 };
-type ConnectionSetupStep = "provider" | "credentials" | "advanced";
+type ConnectionSetupStep = "provider" | "credentials";
+type NoticeTone = "success" | "error" | "warning" | "info";
 
-const connectionSetupSteps: ConnectionSetupStep[] = ["provider", "credentials", "advanced"];
+const connectionSetupSteps: ConnectionSetupStep[] = ["provider", "credentials"];
 
 const CONNECTION_ACTION_TIMEOUT_MS = 10_000;
 
@@ -99,9 +101,10 @@ export function App() {
   useEffect(() => {
     if (!notice) return;
 
+    const tone = noticeTone(notice);
     const timer = window.setTimeout(() => {
       useAppStore.getState().setNotice(undefined);
-    }, 12_000);
+    }, noticeDurationMs(tone));
 
     return () => window.clearTimeout(timer);
   }, [notice]);
@@ -125,12 +128,12 @@ export function App() {
           <span>{t("common.localOnly")}</span>
         </footer>
       </div>
-      {notice ? <NoticeDialog language={language} message={notice} /> : null}
+      {notice ? <NoticeToast language={language} message={notice} /> : null}
     </div>
   );
 }
 
-function NoticeDialog({
+function NoticeToast({
   language,
   message,
 }: {
@@ -145,31 +148,41 @@ function NoticeDialog({
         ? "操作已完成"
         : tone === "error"
           ? "需要处理"
-          : "提示"
+          : tone === "warning"
+            ? "请注意"
+            : "提示"
       : tone === "success"
         ? "Done"
         : tone === "error"
           ? "Action needed"
-          : "Notice";
+          : tone === "warning"
+            ? "Heads up"
+            : "Notice";
+  const icon =
+    tone === "success" ? (
+      <CheckCircle2 size={20} />
+    ) : tone === "info" ? (
+      <Info size={20} />
+    ) : (
+      <AlertTriangle size={20} />
+    );
 
   return (
-    <div className="notice-dialog-layer" role="presentation">
+    <div className="notice-toast-layer" role="presentation">
       <section
-        aria-live="assertive"
-        aria-modal="false"
-        className={clsx("notice-dialog", tone)}
-        role="alertdialog"
+        aria-atomic="true"
+        aria-live={tone === "error" ? "assertive" : "polite"}
+        className={clsx("notice-toast", tone)}
+        role={tone === "error" ? "alert" : "status"}
       >
-        <div className="notice-dialog-icon">
-          {tone === "success" ? <CheckCircle2 size={22} /> : <AlertTriangle size={22} />}
-        </div>
-        <div className="notice-dialog-body">
+        <div className="notice-toast-icon">{icon}</div>
+        <div className="notice-toast-body">
           <h2>{title}</h2>
           <p>{message}</p>
         </div>
         <button
           aria-label={language === "zh" ? "关闭提示" : "Close notice"}
-          className="notice-dialog-close"
+          className="notice-toast-close"
           onClick={() => setNotice(undefined)}
         >
           <X size={18} />
@@ -182,11 +195,15 @@ function NoticeDialog({
 function noticeTone(message: string) {
   const normalized = message.toLowerCase();
   if (
-    /失败|错误|无效|超时|拦截|不能|请先|blocked|cors|failed|failure|error|invalid|timed out|missing|required/.test(
+    /失败|错误|无效|超时|拦截|不能|blocked|cors|failed|failure|error|invalid|timed out/.test(
       normalized
     )
   ) {
     return "error";
+  }
+
+  if (/请先|需要|缺少|检查|注意|warning|missing|required|needed|check/.test(normalized)) {
+    return "warning";
   }
 
   if (
@@ -197,7 +214,14 @@ function noticeTone(message: string) {
     return "success";
   }
 
-  return "neutral";
+  return "info";
+}
+
+function noticeDurationMs(tone: NoticeTone) {
+  if (tone === "success") return 4_200;
+  if (tone === "error") return 7_000;
+  if (tone === "warning") return 6_000;
+  return 5_000;
 }
 
 function Header() {
@@ -932,8 +956,7 @@ function ResultView() {
 function connectionSetupStepLabel(language: "en" | "zh", step: ConnectionSetupStep) {
   const labels = {
     provider: language === "zh" ? "选择供应商" : "Provider",
-    credentials: language === "zh" ? "填写凭据" : "Credentials",
-    advanced: language === "zh" ? "高级设置" : "Advanced",
+    credentials: language === "zh" ? "配置连接" : "Connection",
   };
 
   return labels[step];
@@ -1283,11 +1306,6 @@ function ApiKeyModal() {
                   />
                 </label>
               </div>
-            </>
-          ) : null}
-
-          {activeStep === "advanced" ? (
-            <>
               <div className="connection-details-grid">
                 <label className="field-label compact">
                   <span>{t("connections.protocol")}</span>
@@ -1313,6 +1331,7 @@ function ApiKeyModal() {
                 <label className="field-label compact">
                   <span>{t("connections.baseUrl")}</span>
                   <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
+                  <span className="connection-hint">{t("connections.baseUrlHelp")}</span>
                 </label>
               </div>
               <div className="connection-details">
@@ -1513,8 +1532,8 @@ function ConnectionsView() {
                   ? `${failedCount} 个连接需要检查`
                   : `${failedCount} connection${failedCount > 1 ? "s" : ""} need attention`
                 : language === "zh"
-                  ? "高级设置只在出错时处理"
-                  : "Advanced settings stay out of the way"}
+                  ? "连接配置集中在一步"
+                  : "Connection settings are in one step"}
             </small>
           </div>
           <div className="sidecar-meter">
@@ -1798,117 +1817,112 @@ function ConnectionCard({
         <div className="connection-step-panel">
           {activeStep === "provider" ? (
             <>
-          <div className="provider-dock" aria-label={t("connections.presets")}>
-            {presets.map((preset) => (
-              <button
-                className={clsx("provider-pill", selectedPreset?.id === preset.id && "selected")}
-                disabled={isWorking}
-                key={preset.id}
-                onClick={() => applyProviderPreset(preset)}
+              <div className="provider-dock" aria-label={t("connections.presets")}>
+                {presets.map((preset) => (
+                  <button
+                    className={clsx("provider-pill", selectedPreset?.id === preset.id && "selected")}
+                    disabled={isWorking}
+                    key={preset.id}
+                    onClick={() => applyProviderPreset(preset)}
                     type="button"
-              >
-                <span>{preset.label}</span>
-                <small>{preset.shortLabel}</small>
-              </button>
-            ))}
-          </div>
+                  >
+                    <span>{preset.label}</span>
+                    <small>{preset.shortLabel}</small>
+                  </button>
+                ))}
+              </div>
             </>
           ) : null}
 
           {activeStep === "credentials" ? (
             <>
-          <div className="connection-form-grid">
-            <label className="field-label compact">
-              <span>{t("connections.name")}</span>
-              <input className="text-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
-            </label>
-            <label className="field-label compact">
-              <span>{t("connections.model")}</span>
-              {draft.availableModels && draft.availableModels.length > 0 ? (
-                <select
-                  className="text-input"
-                  value={draft.model}
-                  onChange={(event) => setDraft({ ...draft, model: event.target.value })}
-                >
-                  {draft.availableModels.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input className="text-input" value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} />
-              )}
-            </label>
-            <label className="field-label compact connection-api-key">
-              <span>{t("connections.apiKey")}</span>
-              <input
-                className="text-input"
-                type="password"
-                value={draft.apiKey ?? ""}
-                onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })}
-              />
-            </label>
-          </div>
-            </>
-          ) : null}
-
-          {activeStep === "advanced" ? (
-            <>
-            <div className="connection-details-grid">
-              <label className="field-label compact">
-                <span>{t("connections.protocol")}</span>
-                <select
-                  className="text-input"
-                  value={draft.protocol}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      availableModels: undefined,
-                      protocol: event.target.value as ModelProtocol,
-                    })
-                  }
-                >
-                  <option value="openai-chat-completions">OpenAI-compatible Chat Completions</option>
-                  <option value="openai-responses">OpenAI Responses</option>
-                  <option value="anthropic-messages">Anthropic Messages</option>
-                  <option value="gemini">Gemini</option>
-                  <option value="ollama">Ollama / LM Studio</option>
-                  <option value="custom">Custom JSON</option>
-                </select>
-              </label>
-              <label className="field-label compact">
-                <span>{t("connections.baseUrl")}</span>
-                <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
-              </label>
-            </div>
-
-          <div className="connection-details">
-            <label className="field-label compact">
-              <span>{t("connections.headers")}</span>
-              <textarea
-                className="text-input min-h-24 resize-y font-mono text-xs"
-                value={headersText}
-                onChange={(event) => setHeadersText(event.target.value)}
-                placeholder='{"HTTP-Referer":"https://example.com"}'
-              />
-              <span className="connection-hint">{t("connections.headersHelp")}</span>
-            </label>
-            <label className="connection-toggle">
-              <input
-                type="checkbox"
-                checked={draft.secretStorage === "local"}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    secretStorage: event.target.checked ? "local" : "session",
-                  })
-                }
-              />
-              <span>{t("connections.storeKey")}</span>
-            </label>
-            <p className="connection-hint">{t("connections.corsHint")}</p>
-          </div>
+              <div className="connection-form-grid">
+                <label className="field-label compact">
+                  <span>{t("connections.name")}</span>
+                  <input className="text-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+                </label>
+                <label className="field-label compact">
+                  <span>{t("connections.model")}</span>
+                  {draft.availableModels && draft.availableModels.length > 0 ? (
+                    <select
+                      className="text-input"
+                      value={draft.model}
+                      onChange={(event) => setDraft({ ...draft, model: event.target.value })}
+                    >
+                      {draft.availableModels.map((model) => (
+                        <option key={model} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className="text-input" value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} />
+                  )}
+                </label>
+                <label className="field-label compact connection-api-key">
+                  <span>{t("connections.apiKey")}</span>
+                  <input
+                    className="text-input"
+                    type="password"
+                    value={draft.apiKey ?? ""}
+                    onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })}
+                  />
+                </label>
+              </div>
+              <div className="connection-details-grid">
+                <label className="field-label compact">
+                  <span>{t("connections.protocol")}</span>
+                  <select
+                    className="text-input"
+                    value={draft.protocol}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        availableModels: undefined,
+                        protocol: event.target.value as ModelProtocol,
+                      })
+                    }
+                  >
+                    <option value="openai-chat-completions">OpenAI-compatible Chat Completions</option>
+                    <option value="openai-responses">OpenAI Responses</option>
+                    <option value="anthropic-messages">Anthropic Messages</option>
+                    <option value="gemini">Gemini</option>
+                    <option value="ollama">Ollama / LM Studio</option>
+                    <option value="custom">Custom JSON</option>
+                  </select>
+                </label>
+                <label className="field-label compact">
+                  <span>{t("connections.baseUrl")}</span>
+                  <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
+                  <span className="connection-hint">{t("connections.baseUrlHelp")}</span>
+                </label>
+              </div>
+              <div className="connection-details">
+                <label className="field-label compact">
+                  <span>{t("connections.headers")}</span>
+                  <textarea
+                    className="text-input min-h-24 resize-y font-mono text-xs"
+                    value={headersText}
+                    onChange={(event) => setHeadersText(event.target.value)}
+                    placeholder='{"HTTP-Referer":"https://example.com"}'
+                  />
+                  <span className="connection-hint">{t("connections.headersHelp")}</span>
+                </label>
+                <label className="connection-toggle">
+                  <input
+                    type="checkbox"
+                    checked={draft.secretStorage === "local"}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        secretStorage: event.target.checked ? "local" : "session",
+                      })
+                    }
+                  />
+                  <span>{t("connections.storeKey")}</span>
+                </label>
+                <p className="connection-hint">{t("connections.corsHint")}</p>
+              </div>
             </>
           ) : null}
         </div>

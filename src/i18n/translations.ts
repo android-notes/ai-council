@@ -73,6 +73,7 @@ export type TranslationKey =
   | "connections.protocol"
   | "connections.name"
   | "connections.baseUrl"
+  | "connections.baseUrlHelp"
   | "connections.apiKey"
   | "connections.model"
   | "connections.headers"
@@ -197,6 +198,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "connections.protocol": "Protocol",
     "connections.name": "Name",
     "connections.baseUrl": "Base URL",
+    "connections.baseUrlHelp":
+      "Find it in the provider console or API docs. Official OpenAI uses https://api.openai.com/v1, DeepSeek uses https://api.deepseek.com, and relay services often show a /v1 endpoint in their access guide.",
     "connections.apiKey": "API key",
     "connections.model": "Model ID",
     "connections.headers": "Custom headers",
@@ -321,6 +324,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "connections.protocol": "连接协议",
     "connections.name": "名称",
     "connections.baseUrl": "Base URL",
+    "connections.baseUrlHelp":
+      "通常在供应商控制台或 API 接入文档里复制。OpenAI 官方是 https://api.openai.com/v1，DeepSeek 官方是 https://api.deepseek.com，中转站一般会在接入说明里提供一个常见以 /v1 结尾的地址。",
     "connections.apiKey": "API Key",
     "connections.model": "模型 ID",
     "connections.headers": "自定义 Headers",
