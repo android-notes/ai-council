@@ -279,6 +279,20 @@ function HomeView() {
         </p>
 
         <div className="question-console">
+          <div className="question-suggestions" aria-label={t("home.tryPreset")}>
+            <span>{t("home.tryPreset")}</span>
+            <div>
+              {suggestedQuestions[language].map((topic) => (
+                <button
+                  key={topic}
+                  onClick={() => setQuestion(topic)}
+                  type="button"
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="field-label">
             <span>{t("brief.topic")}</span>
             <textarea
@@ -329,28 +343,6 @@ function HomeView() {
             <span>{configuredCount > 0 ? t("nav.connections") : t("connections.add")}</span>
           </button>
         </div>
-
-        <details className="suggestion-drawer">
-          <summary>
-            <span>{t("home.tryPreset")}</span>
-            <ChevronRight size={16} />
-          </summary>
-          <div className="suggestion-list">
-          {suggestedQuestions[language].map((topic) => (
-            <button
-              key={topic}
-              className="suggestion-row"
-              onClick={() => {
-                setQuestion(topic);
-                begin(topic);
-              }}
-            >
-              <span>{topic}</span>
-              <ChevronRight size={16} />
-            </button>
-          ))}
-          </div>
-        </details>
       </aside>
     </section>
   );
@@ -947,25 +939,6 @@ function connectionSetupStepLabel(language: "en" | "zh", step: ConnectionSetupSt
   return labels[step];
 }
 
-function connectionSetupStepDescription(language: "en" | "zh", step: ConnectionSetupStep) {
-  const descriptions = {
-    provider:
-      language === "zh"
-        ? "先选接口类型。大多数中转站使用 OpenAI-compatible。"
-        : "Choose the API family first. Most relays use OpenAI-compatible.",
-    credentials:
-      language === "zh"
-        ? "只需要名称、模型和 API Key 就能开始。"
-        : "Name, model, and API key are enough to start.",
-    advanced:
-      language === "zh"
-        ? "只有跨域、中转、私有模型或自定义 Headers 时才需要。"
-        : "Use this for relays, CORS, private models, or custom headers.",
-  };
-
-  return descriptions[step];
-}
-
 function ConnectionStepTabs({
   activeStep,
   language,
@@ -977,7 +950,7 @@ function ConnectionStepTabs({
 }) {
   return (
     <div className="connection-step-tabs" role="tablist">
-      {connectionSetupSteps.map((step, index) => (
+      {connectionSetupSteps.map((step) => (
         <button
           aria-current={activeStep === step ? "step" : undefined}
           className={clsx("connection-step-tab", activeStep === step && "selected")}
@@ -985,11 +958,7 @@ function ConnectionStepTabs({
           onClick={() => setActiveStep(step)}
           type="button"
         >
-          <span className="connection-step-index">{String(index + 1).padStart(2, "0")}</span>
-          <span>
-            <strong>{connectionSetupStepLabel(language, step)}</strong>
-            <small>{connectionSetupStepDescription(language, step)}</small>
-          </span>
+          <strong>{connectionSetupStepLabel(language, step)}</strong>
         </button>
       ))}
     </div>
@@ -1260,15 +1229,6 @@ function ApiKeyModal() {
         <div className="connection-step-panel">
           {activeStep === "provider" ? (
             <>
-              <div className="connection-step-copy">
-                <p className="connection-eyebrow">01</p>
-                <h3>{language === "zh" ? "先选一个接口家族" : "Pick one API family"}</h3>
-                <p>
-                  {language === "zh"
-                    ? "DeepSeek、中转站和大多数兼容服务都可以从 OpenAI-compatible 开始。之后再根据需要添加 Claude、Gemini 或私有模型。"
-                    : "DeepSeek, relays, and most compatible services can start with OpenAI-compatible. Add Claude, Gemini, or private models later when needed."}
-                </p>
-              </div>
               <div className="provider-dock" aria-label={t("connections.presets")}>
                 {presets.map((preset) => (
                   <button
@@ -1289,15 +1249,6 @@ function ApiKeyModal() {
 
           {activeStep === "credentials" ? (
             <>
-              <div className="connection-step-copy">
-                <p className="connection-eyebrow">02</p>
-                <h3>{language === "zh" ? "填 Key 就能开会" : "Add the key and start"}</h3>
-                <p>
-                  {language === "zh"
-                    ? "这里先保持最小配置。模型列表可以自动获取，也可以直接手动填写模型名。"
-                    : "Keep this minimal. Fetch the model list when available, or type the model name directly."}
-                </p>
-              </div>
               <div className="connection-form-grid">
                 <label className="field-label compact">
                   <span>{t("connections.name")}</span>
@@ -1337,15 +1288,6 @@ function ApiKeyModal() {
 
           {activeStep === "advanced" ? (
             <>
-              <div className="connection-step-copy">
-                <p className="connection-eyebrow">03</p>
-                <h3>{language === "zh" ? "中转与浏览器直连" : "Relays and browser calls"}</h3>
-                <p>
-                  {language === "zh"
-                    ? "只有当服务商需要特殊协议、Base URL 或自定义 Headers 时才改这里。CORS 报错通常需要走你自己的中转。"
-                    : "Change this only when a provider needs a special protocol, Base URL, or custom headers. CORS errors usually need your own relay."}
-                </p>
-              </div>
               <div className="connection-details-grid">
                 <label className="field-label compact">
                   <span>{t("connections.protocol")}</span>
@@ -1510,23 +1452,6 @@ function ConnectionsView() {
           <p className="connection-eyebrow">AI Council</p>
           <h1>{t("connections.title")}</h1>
           <p>{t("connections.subtitle")}</p>
-          <div className="connection-command-grid" aria-label={language === "zh" ? "配置路径" : "Setup path"}>
-            <div>
-              <span>01</span>
-              <strong>{language === "zh" ? "选择接口" : "Choose API"}</strong>
-              <small>{language === "zh" ? "先从一个兼容协议开始" : "Start with one compatible API"}</small>
-            </div>
-            <div>
-              <span>02</span>
-              <strong>{language === "zh" ? "填写 Key" : "Add key"}</strong>
-              <small>{language === "zh" ? "只填必要字段即可测试" : "Only required fields first"}</small>
-            </div>
-            <div>
-              <span>03</span>
-              <strong>{language === "zh" ? "扩展席位" : "Add seats"}</strong>
-              <small>{language === "zh" ? "需要时再接更多模型" : "Connect more models later"}</small>
-            </div>
-          </div>
         </div>
         <div className="connection-stats">
           <span>{configuredCount}/{connections.length}</span>
@@ -1570,11 +1495,6 @@ function ConnectionsView() {
           <div>
             <p className="connection-eyebrow">{language === "zh" ? "席位策略" : "Seat strategy"}</p>
             <h2>{language === "zh" ? "从一个 Key 开始" : "Start with one key"}</h2>
-            <p>
-              {language === "zh"
-                ? "先用一个模型完成会议。需要更广模型覆盖时，再把关键角色分配给不同供应商。"
-                : "Start with one model for the full meeting. Add providers later when you need broader model coverage."}
-            </p>
           </div>
           <div className="sidecar-checklist">
             <span>{language === "zh" ? "正式可用" : "Ready"}</span>
@@ -1878,15 +1798,6 @@ function ConnectionCard({
         <div className="connection-step-panel">
           {activeStep === "provider" ? (
             <>
-              <div className="connection-step-copy">
-                <p className="connection-eyebrow">01</p>
-                <h3>{language === "zh" ? "选择这张席位使用的接口" : "Choose the API for this seat"}</h3>
-                <p>
-                  {language === "zh"
-                    ? "不用一次接齐所有模型。先让一个供应商跑通，再把关键角色分配给更多连接。"
-                    : "You do not need every model on day one. Get one provider working, then assign key roles to more connections."}
-                </p>
-              </div>
           <div className="provider-dock" aria-label={t("connections.presets")}>
             {presets.map((preset) => (
               <button
@@ -1906,15 +1817,6 @@ function ConnectionCard({
 
           {activeStep === "credentials" ? (
             <>
-              <div className="connection-step-copy">
-                <p className="connection-eyebrow">02</p>
-                <h3>{language === "zh" ? "填写最小可用配置" : "Fill the minimum working setup"}</h3>
-                <p>
-                  {language === "zh"
-                    ? "名称方便你后续给角色分配模型；模型名可以手填，也可以通过获取模型自动选择。"
-                    : "The name helps later role assignment. Type a model manually or fetch the available list."}
-                </p>
-              </div>
           <div className="connection-form-grid">
             <label className="field-label compact">
               <span>{t("connections.name")}</span>
@@ -1953,15 +1855,6 @@ function ConnectionCard({
 
           {activeStep === "advanced" ? (
             <>
-              <div className="connection-step-copy">
-                <p className="connection-eyebrow">03</p>
-                <h3>{language === "zh" ? "高级参数只在需要时调整" : "Tune advanced parameters only when needed"}</h3>
-                <p>
-                  {language === "zh"
-                    ? "中转站、私有部署、Ollama、Claude 或 Gemini 接入异常时，再检查协议、Base URL、Headers 和 CORS。"
-                    : "When relays, private deployments, Ollama, Claude, or Gemini behave differently, check protocol, Base URL, headers, and CORS."}
-                </p>
-              </div>
             <div className="connection-details-grid">
               <label className="field-label compact">
                 <span>{t("connections.protocol")}</span>

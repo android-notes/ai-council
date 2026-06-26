@@ -331,6 +331,34 @@ body {
     0 24px 80px rgba(0, 0, 0, 0.42);
 }
 
+.question-suggestions {
+  @apply grid gap-2;
+}
+
+.question-suggestions > span {
+  @apply text-xs font-black uppercase;
+  letter-spacing: 0;
+  color: #f6c85f;
+}
+
+.question-suggestions > div {
+  @apply flex flex-wrap gap-2;
+}
+
+.question-suggestions button {
+  @apply rounded-md px-3 py-2 text-left text-sm font-bold transition;
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 249, 239, 0.78);
+  background: rgba(7, 1, 12, 0.72);
+}
+
+.question-suggestions button:hover {
+  border-color: rgba(246, 200, 95, 0.62);
+  color: #fff9ef;
+  background: rgba(63, 9, 92, 0.72);
+}
+
 .question-input {
   @apply min-h-36 w-full resize-y rounded-md px-4 py-3 text-base leading-7 outline-none transition;
   border: 1px solid rgba(255, 255, 255, 0.13);
@@ -795,11 +823,11 @@ body {
 }
 
 .connection-step-tabs {
-  @apply grid gap-2 md:grid-cols-3;
+  @apply flex flex-wrap gap-2;
 }
 
 .connection-step-tab {
-  @apply grid min-h-24 gap-2 rounded-md p-3 text-left transition;
+  @apply inline-flex min-h-10 items-center gap-2 rounded-md px-3 py-2 text-left transition;
   border: 1px solid rgba(246, 200, 95, 0.17);
   color: rgba(255, 249, 239, 0.66);
   background: rgba(5, 1, 8, 0.52);
@@ -820,18 +848,13 @@ body {
 }
 
 .connection-step-index {
-  @apply inline-grid h-7 w-9 place-items-center rounded-sm text-xs font-black;
+  @apply inline-grid h-6 w-6 shrink-0 place-items-center rounded-sm text-xs font-black;
   color: #120019;
   background: linear-gradient(120deg, #fff3b8, #f6c85f);
 }
 
 .connection-step-tab strong {
-  @apply block text-sm font-black;
-}
-
-.connection-step-tab small {
-  @apply mt-1 block text-xs font-bold leading-5;
-  color: rgba(255, 249, 239, 0.52);
+  @apply text-sm font-black;
 }
 
 .connection-target-preview {
@@ -1961,6 +1984,7 @@ body {
 }
 
 .mode-switch button,
+.question-suggestions button,
 .suggestion-row,
 .segmented-control button {
   border-color: rgba(212, 212, 212, 0.95);
@@ -1971,6 +1995,7 @@ body {
 
 .mode-switch button:hover,
 .mode-switch button.selected,
+.question-suggestions button:hover,
 .suggestion-row:hover,
 .segmented-control button:hover,
 .segmented-control button.selected {
@@ -1978,6 +2003,10 @@ body {
   color: #262626;
   background: #facc15;
   box-shadow: 0 10px 24px rgba(202, 138, 4, 0.14);
+}
+
+.question-suggestions > span {
+  color: #ca8a04;
 }
 
 .cost-strip,
