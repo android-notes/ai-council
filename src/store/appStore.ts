@@ -155,26 +155,38 @@ export const useAppStore = create<AppState>((set, get) => ({
   setBrief: (brief) => set(brief),
 
   buildLineup: () => {
-    const { mode, topic, language } = get();
-    const roles = generateRoles(mode, topic, language, "mock");
+    const { mode, topic, language, connections } = get();
+    const roles = generateRoles(
+      mode,
+      topic,
+      language,
+      pickDefaultModelConnectionId(connections)
+    );
     set({ roles, view: "lineup" });
     window.location.hash = "lineup";
   },
 
   regenerateRoles: () => {
-    const { mode, topic, language } = get();
-    set({ roles: generateRoles(mode, topic, language, "mock") });
+    const { mode, topic, language, connections } = get();
+    set({
+      roles: generateRoles(
+        mode,
+        topic,
+        language,
+        pickDefaultModelConnectionId(connections)
+      ),
+    });
   },
 
   autoAssignRoles: () => {
     const { connections, language, roles } = get();
-    const modelSeats = connections.filter((connection) => connection.protocol !== "mock");
+    const modelSeats = usableModelSeats(connections);
     if (modelSeats.length === 0) {
       set({
         notice:
           language === "zh"
-            ? "先添加至少一个额外模型连接，再优化阵容。"
-            : "Add one more model connection before optimizing the lineup.",
+            ? "先添加一个带 Key、已连接或本地可用的正式模型席位。"
+            : "Add one real model seat with a key, connected status, or local endpoint first.",
       });
       return;
     }
@@ -216,7 +228,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const nextRoles = roles.length
       ? roles
-      : generateRoles(mode, topic, language, "mock");
+      : generateRoles(
+          mode,
+          topic,
+          language,
+          pickDefaultModelConnectionId(get().connections)
+        );
     let session = createEmptySession(mode, topic, context, depth, nextRoles);
     set({
       currentSession: session,
@@ -449,6 +466,49 @@ function findConnection(connectionId: string, connections: ModelConnection[]) {
     connections[0] ??
     mockConnection
   );
+}
+
+function pickDefaultModelConnectionId(connections: ModelConnection[]) {
+  return usableModelSeats(connections)[0]?.id ?? "mock";
+}
+
+function usableModelSeats(connections: ModelConnection[]) {
+  const realSeats = connections.filter((connection) => connection.protocol !== "mock");
+  const connectedSeats = realSeats.filter((connection) => connection.status === "connected");
+  const configuredSeats = realSeats.filter(hasCallableConfiguration);
+
+  return [...connectedSeats, ...configuredSeats].filter(
+    (connection, index, seats) =>
+      seats.findIndex((seat) => seat.id === connection.id) === index &&
+      !isUnconfiguredDefaultConnection(connection)
+  );
+}
+
+function hasCallableConfiguration(connection: ModelConnection) {
+  return (
+    Boolean(connection.apiKey?.trim()) ||
+    Boolean(connection.customHeaders && Object.keys(connection.customHeaders).length > 0) ||
+    connection.protocol === "ollama" ||
+    (connection.protocol === "custom" && !isPlaceholderEndpoint(connection.baseUrl))
+  );
+}
+
+function isUnconfiguredDefaultConnection(connection: ModelConnection) {
+  return (
+    !connection.apiKey?.trim() &&
+    !connection.customHeaders &&
+    connection.status !== "connected" &&
+    (trimSlashes(connection.baseUrl) === "https://api.openai.com/v1" ||
+      isPlaceholderEndpoint(connection.baseUrl))
+  );
+}
+
+function isPlaceholderEndpoint(baseUrl: string) {
+  return baseUrl.includes("your-") || baseUrl.includes("example.com");
+}
+
+function trimSlashes(value: string) {
+  return value.trim().replace(/\/+$/, "");
 }
 
 function appendMessage(session: CouncilSession, message: CouncilSession["messages"][number]) {

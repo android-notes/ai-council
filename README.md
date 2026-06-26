@@ -61,7 +61,7 @@ Before publishing, confirm GitHub Pages is set to **GitHub Actions** in the repo
    - Custom JSON endpoint: provide the exact POST endpoint and return a common text field such as `content`, `text`, `response`, `output_text`, `choices`, or Gemini-style `candidates`.
 4. Click **Fetch models** to load model IDs when the endpoint supports it.
 5. If the browser blocks CORS, use your own Worker, Function, local proxy, or compatible relay endpoint.
-6. Build a council lineup, optionally optimize model seats, and start the meeting.
+6. Build a council lineup. Once a real model connection is connected or configured with a key, new roles default to that real seat instead of Mock.
 7. Export the result as a poster, Markdown, JSON, share title, or short-video script.
 8. Keep everything local unless you manually share an exported asset.
 
