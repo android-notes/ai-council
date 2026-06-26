@@ -27,6 +27,16 @@ AI Council is a frontend-first tool for bringing multiple AI roles into one stru
 
 Apache-2.0
 
+## Live App
+
+The hosted frontend is available at:
+
+```text
+https://android-notes.github.io/ai-council/
+```
+
+The app is BYOK/BYOP. It does not include model credits, a hosted model service, or server-side key storage.
+
 ## Local Development
 
 ```bash
@@ -36,15 +46,126 @@ npm run build
 npm run lint
 ```
 
-## One-Click Relay Deploy
+## Relay Deployment And Configuration
 
-Deploy your own CORS relay. The relay still uses each user's own API key; it does not provide model credits.
+Some model providers and aggregators block browser CORS. If direct browser calls fail, deploy your own relay and use that relay as the model Base URL.
+
+The relay still uses each user's own API key. Do not put model API keys into GitHub, Vercel, Netlify, or Cloudflare project settings.
+
+### One-Click Deploy
 
 [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fandroid-notes%2Fai-council&project-name=ai-council&repository-name=ai-council&demo-title=AI%20Council&demo-url=https%3A%2F%2Fandroid-notes.github.io%2Fai-council%2F)
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https%3A%2F%2Fgithub.com%2Fandroid-notes%2Fai-council)
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fandroid-notes%2Fai-council)
 
-Recommended for the lowest setup friction: Vercel. Recommended for higher free request volume: Cloudflare.
+Recommended for the lowest setup friction: Vercel or Netlify. Recommended for higher free request volume: Cloudflare.
+
+### Deploy On Netlify
+
+1. Click **Deploy to Netlify**.
+2. Log in with GitHub and authorize the repository import.
+3. Pick a globally unique project name. Enter only the project slug, not a full URL.
+   - Good: `ai-council-relay-yourname`
+   - Bad: `https://ai-council.netlify.app`
+4. Keep the default build settings from `netlify.toml`.
+5. Click deploy.
+6. After deploy, Netlify shows a site domain such as:
+
+```text
+https://your-site.netlify.app
+```
+
+Health check:
+
+```text
+https://your-site.netlify.app/api/health
+```
+
+If it returns `{"ok":true,...}`, the relay is ready.
+
+### Deploy On Vercel
+
+1. Click **Deploy to Vercel**.
+2. Log in with GitHub and import the repository.
+3. Keep the default Vite settings from `vercel.json`.
+4. Click deploy.
+5. After deploy, Vercel shows a project domain such as:
+
+```text
+https://your-project.vercel.app
+```
+
+Health check:
+
+```text
+https://your-project.vercel.app/api/health
+```
+
+### Deploy On Cloudflare
+
+1. Click **Deploy to Cloudflare**.
+2. Log in to Cloudflare. If GitHub social login fails, sign up with email/password and connect GitHub after login.
+3. Follow the Deploy to Workers flow.
+4. After deploy, Cloudflare shows a Worker domain such as:
+
+```text
+https://your-worker.workers.dev
+```
+
+Health check:
+
+```text
+https://your-worker.workers.dev/health
+```
+
+Cloudflare can also be deployed from GitHub Actions after adding `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. See [docs/deployment.md](docs/deployment.md).
+
+### Base URL Patterns
+
+Use the deployed relay domain as the prefix.
+
+For Vercel or Netlify:
+
+| Provider | Protocol In AI Council | Base URL |
+| --- | --- | --- |
+| OpenAI | OpenAI-compatible Chat Completions | `https://your-site.netlify.app/api/openai/v1` |
+| DeepSeek | OpenAI-compatible Chat Completions | `https://your-site.netlify.app/api/deepseek` |
+| Anthropic | Anthropic Messages | `https://your-site.netlify.app/api/anthropic/v1` |
+| Gemini | Gemini | `https://your-site.netlify.app/api/gemini/v1beta` |
+| OpenRouter | OpenAI-compatible Chat Completions | `https://your-site.netlify.app/api/openrouter/api/v1` |
+
+For Cloudflare:
+
+| Provider | Protocol In AI Council | Base URL |
+| --- | --- | --- |
+| OpenAI | OpenAI-compatible Chat Completions | `https://your-worker.workers.dev/openai/v1` |
+| DeepSeek | OpenAI-compatible Chat Completions | `https://your-worker.workers.dev/deepseek` |
+| Anthropic | Anthropic Messages | `https://your-worker.workers.dev/anthropic/v1` |
+| Gemini | Gemini | `https://your-worker.workers.dev/gemini/v1beta` |
+| OpenRouter | OpenAI-compatible Chat Completions | `https://your-worker.workers.dev/openrouter/api/v1` |
+
+Example DeepSeek setup with a Netlify relay:
+
+```text
+Protocol: OpenAI-compatible Chat Completions
+Base URL: https://your-site.netlify.app/api/deepseek
+Model ID: deepseek-chat
+API key: paste your own DeepSeek key in the AI Council UI
+```
+
+### Configure AI Council
+
+1. Open the app.
+2. Go to **Models** or start a meeting until the API key modal appears.
+3. Add or edit a model connection.
+4. Pick the provider preset, or set the protocol manually.
+5. Expand **Endpoint and protocol**.
+6. Paste the relay **Base URL** from the table above.
+7. Enter the model ID.
+8. Paste your provider API key in the AI Council UI.
+9. Click **Test connection**.
+
+The Base URL field is intentionally hidden inside **Endpoint and protocol** so the first-run setup stays simple.
 
 ## Release Checklist
 
@@ -55,8 +176,6 @@ npm run build
 ```
 
 Before publishing, confirm GitHub Pages is set to **GitHub Actions** in the repository settings.
-
-Cloudflare Worker relay deployment can be run from GitHub after adding `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. See [docs/deployment.md](docs/deployment.md).
 
 ## Usage
 
