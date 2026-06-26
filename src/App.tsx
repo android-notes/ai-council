@@ -42,6 +42,9 @@ type ActionFeedback = {
   tone: "neutral" | "success" | "error";
   message: string;
 };
+type ConnectionSetupStep = "provider" | "credentials" | "advanced";
+
+const connectionSetupSteps: ConnectionSetupStep[] = ["provider", "credentials", "advanced"];
 
 const CONNECTION_ACTION_TIMEOUT_MS = 10_000;
 
@@ -873,6 +876,81 @@ function ResultView() {
   );
 }
 
+function connectionSetupStepLabel(language: "en" | "zh", step: ConnectionSetupStep) {
+  const labels = {
+    provider: language === "zh" ? "选择供应商" : "Provider",
+    credentials: language === "zh" ? "填写凭据" : "Credentials",
+    advanced: language === "zh" ? "高级设置" : "Advanced",
+  };
+
+  return labels[step];
+}
+
+function connectionSetupStepDescription(language: "en" | "zh", step: ConnectionSetupStep) {
+  const descriptions = {
+    provider:
+      language === "zh"
+        ? "先选接口类型。大多数中转站使用 OpenAI-compatible。"
+        : "Choose the API family first. Most relays use OpenAI-compatible.",
+    credentials:
+      language === "zh"
+        ? "只需要名称、模型和 API Key 就能开始。"
+        : "Name, model, and API key are enough to start.",
+    advanced:
+      language === "zh"
+        ? "只有跨域、中转、私有模型或自定义 Headers 时才需要。"
+        : "Use this for relays, CORS, private models, or custom headers.",
+  };
+
+  return descriptions[step];
+}
+
+function ConnectionStepTabs({
+  activeStep,
+  language,
+  setActiveStep,
+}: {
+  activeStep: ConnectionSetupStep;
+  language: "en" | "zh";
+  setActiveStep: (step: ConnectionSetupStep) => void;
+}) {
+  return (
+    <div className="connection-step-tabs" role="tablist">
+      {connectionSetupSteps.map((step, index) => (
+        <button
+          aria-current={activeStep === step ? "step" : undefined}
+          className={clsx("connection-step-tab", activeStep === step && "selected")}
+          key={step}
+          onClick={() => setActiveStep(step)}
+          type="button"
+        >
+          <span className="connection-step-index">{String(index + 1).padStart(2, "0")}</span>
+          <span>
+            <strong>{connectionSetupStepLabel(language, step)}</strong>
+            <small>{connectionSetupStepDescription(language, step)}</small>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ConnectionTargetPreview({
+  connection,
+  language,
+}: {
+  connection: ModelConnection;
+  language: "en" | "zh";
+}) {
+  return (
+    <div className="connection-target-preview">
+      <span>{language === "zh" ? "当前目标" : "Current target"}</span>
+      <strong>{protocolLabel(connection.protocol)}</strong>
+      <small>{connection.baseUrl || (language === "zh" ? "未设置 Base URL" : "No Base URL set")}</small>
+    </div>
+  );
+}
+
 function ApiKeyModal() {
   const language = useAppStore((state) => state.language);
   const view = useAppStore((state) => state.view);
@@ -895,6 +973,7 @@ function ApiKeyModal() {
   );
   const [pendingAction, setPendingAction] = useState<ConnectionAction>();
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback>();
+  const [activeStep, setActiveStep] = useState<ConnectionSetupStep>("provider");
   const presets = useMemo(() => buildConnectionPresets(t), [t]);
   const selectedPreset = presets.find((preset) => preset.matches(draft));
   const isWorking = Boolean(pendingAction);
@@ -1089,6 +1168,7 @@ function ApiKeyModal() {
       customHeaders: undefined,
     });
     setHeadersText(preset.headersText ?? "");
+    setActiveStep("credentials");
   }
 
   return (
@@ -1110,120 +1190,156 @@ function ApiKeyModal() {
           </button>
         </div>
 
-        <div className="provider-dock" aria-label={t("connections.presets")}>
-          {presets.map((preset) => (
-            <button
-              className={clsx("provider-pill", selectedPreset?.id === preset.id && "selected")}
-              disabled={isWorking}
-              key={preset.id}
-              onClick={() => applyProviderPreset(preset)}
-            >
-              <span>{preset.label}</span>
-              <small>{preset.shortLabel}</small>
-            </button>
-          ))}
-        </div>
+        <ConnectionStepTabs
+          activeStep={activeStep}
+          language={language}
+          setActiveStep={setActiveStep}
+        />
 
-        <div className="connection-form-grid">
-          <label className="field-label compact">
-            <span>{t("connections.name")}</span>
-            <input className="text-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
-          </label>
-          <label className="field-label compact">
-            <span>{t("connections.model")}</span>
-            {draft.availableModels && draft.availableModels.length > 0 ? (
-              <select
-                className="text-input"
-                value={draft.model}
-                onChange={(event) => setDraft({ ...draft, model: event.target.value })}
-              >
-                {draft.availableModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
+        <div className="connection-step-panel">
+          {activeStep === "provider" ? (
+            <>
+              <div className="connection-step-copy">
+                <p className="connection-eyebrow">01</p>
+                <h3>{language === "zh" ? "先选一个接口家族" : "Pick one API family"}</h3>
+                <p>
+                  {language === "zh"
+                    ? "DeepSeek、中转站和大多数兼容服务都可以从 OpenAI-compatible 开始。之后再根据需要添加 Claude、Gemini 或私有模型。"
+                    : "DeepSeek, relays, and most compatible services can start with OpenAI-compatible. Add Claude, Gemini, or private models later when needed."}
+                </p>
+              </div>
+              <div className="provider-dock" aria-label={t("connections.presets")}>
+                {presets.map((preset) => (
+                  <button
+                    className={clsx("provider-pill", selectedPreset?.id === preset.id && "selected")}
+                    disabled={isWorking}
+                    key={preset.id}
+                    onClick={() => applyProviderPreset(preset)}
+                    type="button"
+                  >
+                    <span>{preset.label}</span>
+                    <small>{preset.shortLabel}</small>
+                  </button>
                 ))}
-              </select>
-            ) : (
-              <input className="text-input" value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} />
-            )}
-          </label>
-          <label className="field-label compact connection-api-key">
-            <span>{t("connections.apiKey")}</span>
-            <input
-              autoFocus
-              className="text-input"
-              type="password"
-              value={draft.apiKey ?? ""}
-              onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })}
-            />
-          </label>
+              </div>
+              <ConnectionTargetPreview connection={draft} language={language} />
+            </>
+          ) : null}
+
+          {activeStep === "credentials" ? (
+            <>
+              <div className="connection-step-copy">
+                <p className="connection-eyebrow">02</p>
+                <h3>{language === "zh" ? "填 Key 就能开会" : "Add the key and start"}</h3>
+                <p>
+                  {language === "zh"
+                    ? "这里先保持最小配置。模型列表可以自动获取，也可以直接手动填写模型名。"
+                    : "Keep this minimal. Fetch the model list when available, or type the model name directly."}
+                </p>
+              </div>
+              <div className="connection-form-grid">
+                <label className="field-label compact">
+                  <span>{t("connections.name")}</span>
+                  <input className="text-input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+                </label>
+                <label className="field-label compact">
+                  <span>{t("connections.model")}</span>
+                  {draft.availableModels && draft.availableModels.length > 0 ? (
+                    <select
+                      className="text-input"
+                      value={draft.model}
+                      onChange={(event) => setDraft({ ...draft, model: event.target.value })}
+                    >
+                      {draft.availableModels.map((model) => (
+                        <option key={model} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className="text-input" value={draft.model} onChange={(event) => setDraft({ ...draft, model: event.target.value })} />
+                  )}
+                </label>
+                <label className="field-label compact connection-api-key">
+                  <span>{t("connections.apiKey")}</span>
+                  <input
+                    autoFocus
+                    className="text-input"
+                    type="password"
+                    value={draft.apiKey ?? ""}
+                    onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })}
+                  />
+                </label>
+              </div>
+            </>
+          ) : null}
+
+          {activeStep === "advanced" ? (
+            <>
+              <div className="connection-step-copy">
+                <p className="connection-eyebrow">03</p>
+                <h3>{language === "zh" ? "中转与浏览器直连" : "Relays and browser calls"}</h3>
+                <p>
+                  {language === "zh"
+                    ? "只有当服务商需要特殊协议、Base URL 或自定义 Headers 时才改这里。CORS 报错通常需要走你自己的中转。"
+                    : "Change this only when a provider needs a special protocol, Base URL, or custom headers. CORS errors usually need your own relay."}
+                </p>
+              </div>
+              <div className="connection-details-grid">
+                <label className="field-label compact">
+                  <span>{t("connections.protocol")}</span>
+                  <select
+                    className="text-input"
+                    value={draft.protocol}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        availableModels: undefined,
+                        protocol: event.target.value as ModelProtocol,
+                      })
+                    }
+                  >
+                    <option value="openai-chat-completions">OpenAI-compatible Chat Completions</option>
+                    <option value="openai-responses">OpenAI Responses</option>
+                    <option value="anthropic-messages">Anthropic Messages</option>
+                    <option value="gemini">Gemini</option>
+                    <option value="ollama">Ollama / LM Studio</option>
+                    <option value="custom">Custom JSON</option>
+                  </select>
+                </label>
+                <label className="field-label compact">
+                  <span>{t("connections.baseUrl")}</span>
+                  <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
+                </label>
+              </div>
+              <div className="connection-details">
+                <label className="field-label compact">
+                  <span>{t("connections.headers")}</span>
+                  <textarea
+                    className="text-input min-h-24 resize-y font-mono text-xs"
+                    value={headersText}
+                    onChange={(event) => setHeadersText(event.target.value)}
+                    placeholder='{"HTTP-Referer":"https://example.com"}'
+                  />
+                  <span className="connection-hint">{t("connections.headersHelp")}</span>
+                </label>
+                <label className="connection-toggle">
+                  <input
+                    type="checkbox"
+                    checked={draft.secretStorage === "local"}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        secretStorage: event.target.checked ? "local" : "session",
+                      })
+                    }
+                  />
+                  <span>{t("connections.storeKey")}</span>
+                </label>
+              </div>
+            </>
+          ) : null}
         </div>
-
-        <details className="connection-details">
-          <summary>
-            <span>{language === "zh" ? "Endpoint 与协议" : "Endpoint and protocol"}</span>
-            <ChevronRight size={16} />
-          </summary>
-          <div className="connection-details-grid">
-            <label className="field-label compact">
-              <span>{t("connections.protocol")}</span>
-              <select
-                className="text-input"
-                value={draft.protocol}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    availableModels: undefined,
-                    protocol: event.target.value as ModelProtocol,
-                  })
-                }
-              >
-                <option value="openai-chat-completions">OpenAI-compatible Chat Completions</option>
-                <option value="openai-responses">OpenAI Responses</option>
-                <option value="anthropic-messages">Anthropic Messages</option>
-                <option value="gemini">Gemini</option>
-                <option value="ollama">Ollama / LM Studio</option>
-                <option value="custom">Custom JSON</option>
-              </select>
-            </label>
-            <label className="field-label compact">
-              <span>{t("connections.baseUrl")}</span>
-              <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
-            </label>
-          </div>
-        </details>
-
-        <details className="connection-details">
-          <summary>
-            <span>{language === "zh" ? "Headers 与本地保存" : "Headers and local storage"}</span>
-            <ChevronRight size={16} />
-          </summary>
-          <label className="field-label compact">
-            <span>{t("connections.headers")}</span>
-            <textarea
-              className="text-input min-h-24 resize-y font-mono text-xs"
-              value={headersText}
-              onChange={(event) => setHeadersText(event.target.value)}
-              placeholder='{"HTTP-Referer":"https://example.com"}'
-            />
-            <span className="text-xs font-normal leading-5 text-stone-500">
-              {t("connections.headersHelp")}
-            </span>
-          </label>
-          <label className="connection-toggle">
-            <input
-              type="checkbox"
-              checked={draft.secretStorage === "local"}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  secretStorage: event.target.checked ? "local" : "session",
-                })
-              }
-            />
-            <span>{t("connections.storeKey")}</span>
-          </label>
-        </details>
 
         {actionFeedback ? (
           <p
@@ -1240,32 +1356,49 @@ function ApiKeyModal() {
         ) : null}
 
         <div className="connection-actions">
-          <button
-            className="secondary-button"
-            disabled={isWorking}
-            onClick={() => void fetchDraftModels()}
-          >
-            <Bot size={16} />
-            <span>{pendingAction === "fetch" ? actionLabel("fetch") : t("connections.fetchModels")}</span>
-          </button>
-          <button
-            className="secondary-button"
-            disabled={isWorking}
-            onClick={() => void saveAndTestDraft()}
-          >
-            <ShieldCheck size={16} />
-            <span>{pendingAction === "test" ? actionLabel("test") : t("connections.test")}</span>
-          </button>
-          <button
-            className="primary-button"
-            disabled={isWorking}
-            onClick={() => void saveDraft()}
-          >
-            <Save size={16} />
-            <span>{pendingAction === "save" ? actionLabel("save") : t("connections.save")}</span>
-          </button>
+          {activeStep === "provider" ? (
+            <button
+              className="primary-button"
+              disabled={isWorking}
+              onClick={() => setActiveStep("credentials")}
+              type="button"
+            >
+              <ChevronRight size={16} />
+              <span>{language === "zh" ? "下一步：填写 Key" : "Next: add key"}</span>
+            </button>
+          ) : (
+            <>
+              <button
+                className="secondary-button"
+                disabled={isWorking}
+                onClick={() => void fetchDraftModels()}
+                type="button"
+              >
+                <Bot size={16} />
+                <span>{pendingAction === "fetch" ? actionLabel("fetch") : t("connections.fetchModels")}</span>
+              </button>
+              <button
+                className="secondary-button"
+                disabled={isWorking}
+                onClick={() => void saveAndTestDraft()}
+                type="button"
+              >
+                <ShieldCheck size={16} />
+                <span>{pendingAction === "test" ? actionLabel("test") : t("connections.test")}</span>
+              </button>
+              <button
+                className="primary-button"
+                disabled={isWorking}
+                onClick={() => void saveDraft()}
+                type="button"
+              >
+                <Save size={16} />
+                <span>{pendingAction === "save" ? actionLabel("save") : t("connections.save")}</span>
+              </button>
+            </>
+          )}
           {isWorking ? (
-            <button className="secondary-button" onClick={cancelPendingAction}>
+            <button className="secondary-button" onClick={cancelPendingAction} type="button">
               <span>{language === "zh" ? "停止等待" : "Stop waiting"}</span>
             </button>
           ) : null}
@@ -1303,14 +1436,36 @@ function ConnectionsView() {
   const clearAllLocalData = useAppStore((state) => state.clearAllLocalData);
   const t = useMemo(() => createTranslator(language), [language]);
   const configuredCount = connections.filter(hasApiKeyForUi).length;
+  const failedCount = connections.filter((connection) => connection.status === "failed").length;
+  const primaryConnectionId =
+    connections.find((connection) => !hasApiKeyForUi(connection))?.id ??
+    connections.find((connection) => connection.status === "failed")?.id ??
+    connections[0]?.id;
 
   return (
     <section className="connections-screen">
       <div className="connections-hero">
-        <div>
+        <div className="connections-hero-copy">
           <p className="connection-eyebrow">AI Council</p>
           <h1>{t("connections.title")}</h1>
           <p>{t("connections.subtitle")}</p>
+          <div className="connection-command-grid" aria-label={language === "zh" ? "配置路径" : "Setup path"}>
+            <div>
+              <span>01</span>
+              <strong>{language === "zh" ? "选择接口" : "Choose API"}</strong>
+              <small>{language === "zh" ? "先从一个兼容协议开始" : "Start with one compatible API"}</small>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>{language === "zh" ? "填写 Key" : "Add key"}</strong>
+              <small>{language === "zh" ? "只填必要字段即可测试" : "Only required fields first"}</small>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>{language === "zh" ? "扩展席位" : "Add seats"}</strong>
+              <small>{language === "zh" ? "需要时再接更多模型" : "Connect more models later"}</small>
+            </div>
+          </div>
         </div>
         <div className="connection-stats">
           <span>{configuredCount}/{connections.length}</span>
@@ -1333,7 +1488,11 @@ function ConnectionsView() {
         <div className="grid min-w-0 gap-4">
           {connections.length > 0 ? (
             connections.map((connection) => (
-              <ConnectionCard key={connection.id} connection={connection} />
+              <ConnectionCard
+                connection={connection}
+                defaultOpen={connection.id === primaryConnectionId || connection.status === "failed"}
+                key={connection.id}
+              />
             ))
           ) : (
             <div className="connection-empty">
@@ -1355,6 +1514,27 @@ function ConnectionsView() {
                 ? "先用一个模型完成会议。需要更广模型覆盖时，再把关键角色分配给不同供应商。"
                 : "Start with one model for the full meeting. Add providers later when you need broader model coverage."}
             </p>
+          </div>
+          <div className="sidecar-checklist">
+            <span>{language === "zh" ? "正式可用" : "Ready"}</span>
+            <strong>
+              {configuredCount > 0
+                ? language === "zh"
+                  ? "可以开会"
+                  : "Council ready"
+                : language === "zh"
+                  ? "等待 Key"
+                  : "Needs a key"}
+            </strong>
+            <small>
+              {failedCount > 0
+                ? language === "zh"
+                  ? `${failedCount} 个连接需要检查`
+                  : `${failedCount} connection${failedCount > 1 ? "s" : ""} need attention`
+                : language === "zh"
+                  ? "高级设置只在出错时处理"
+                  : "Advanced settings stay out of the way"}
+            </small>
           </div>
           <div className="sidecar-meter">
             <span>{connections.length}</span>
@@ -1380,7 +1560,13 @@ function ConnectionsView() {
   );
 }
 
-function ConnectionCard({ connection }: { connection: ModelConnection }) {
+function ConnectionCard({
+  connection,
+  defaultOpen,
+}: {
+  connection: ModelConnection;
+  defaultOpen: boolean;
+}) {
   const language = useAppStore((state) => state.language);
   const saveConnection = useAppStore((state) => state.saveConnection);
   const testConnection = useAppStore((state) => state.testConnection);
@@ -1394,6 +1580,10 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
   );
   const [pendingAction, setPendingAction] = useState<ConnectionAction>();
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback>();
+  const [activeStep, setActiveStep] = useState<ConnectionSetupStep>(
+    hasApiKeyForUi(connection) ? "provider" : "credentials"
+  );
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const presets = useMemo(() => buildConnectionPresets(t), [t]);
   const selectedPreset = presets.find((preset) => preset.matches(draft));
   const isWorking = Boolean(pendingAction);
@@ -1594,10 +1784,15 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
       },
       preset.headersText ?? ""
     );
+    setActiveStep("credentials");
   }
 
   return (
-    <details className="connection-card" open={!hasApiKeyForUi(connection) || connection.status !== "connected"}>
+    <details
+      className="connection-card"
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+      open={isOpen}
+    >
       <summary className="connection-card-header">
         <div>
           <p className="connection-eyebrow">{protocolLabel(draft.protocol)}</p>
@@ -1610,6 +1805,27 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
         </span>
       </summary>
       <div className="connection-flow">
+        <div className="connection-step-shell">
+          <ConnectionStepTabs
+            activeStep={activeStep}
+            language={language}
+            setActiveStep={setActiveStep}
+          />
+          <ConnectionTargetPreview connection={draft} language={language} />
+        </div>
+
+        <div className="connection-step-panel">
+          {activeStep === "provider" ? (
+            <>
+              <div className="connection-step-copy">
+                <p className="connection-eyebrow">01</p>
+                <h3>{language === "zh" ? "选择这张席位使用的接口" : "Choose the API for this seat"}</h3>
+                <p>
+                  {language === "zh"
+                    ? "不用一次接齐所有模型。先让一个供应商跑通，再把关键角色分配给更多连接。"
+                    : "You do not need every model on day one. Get one provider working, then assign key roles to more connections."}
+                </p>
+              </div>
           <div className="provider-dock" aria-label={t("connections.presets")}>
             {presets.map((preset) => (
               <button
@@ -1617,13 +1833,27 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
                 disabled={isWorking}
                 key={preset.id}
                 onClick={() => applyProviderPreset(preset)}
+                    type="button"
               >
                 <span>{preset.label}</span>
                 <small>{preset.shortLabel}</small>
               </button>
             ))}
           </div>
+            </>
+          ) : null}
 
+          {activeStep === "credentials" ? (
+            <>
+              <div className="connection-step-copy">
+                <p className="connection-eyebrow">02</p>
+                <h3>{language === "zh" ? "填写最小可用配置" : "Fill the minimum working setup"}</h3>
+                <p>
+                  {language === "zh"
+                    ? "名称方便你后续给角色分配模型；模型名可以手填，也可以通过获取模型自动选择。"
+                    : "The name helps later role assignment. Type a model manually or fetch the available list."}
+                </p>
+              </div>
           <div className="connection-form-grid">
             <label className="field-label compact">
               <span>{t("connections.name")}</span>
@@ -1657,12 +1887,20 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
               />
             </label>
           </div>
+            </>
+          ) : null}
 
-          <details className="connection-details">
-            <summary>
-              <span>{language === "zh" ? "Endpoint 与协议" : "Endpoint and protocol"}</span>
-              <ChevronRight size={16} />
-            </summary>
+          {activeStep === "advanced" ? (
+            <>
+              <div className="connection-step-copy">
+                <p className="connection-eyebrow">03</p>
+                <h3>{language === "zh" ? "高级参数只在需要时调整" : "Tune advanced parameters only when needed"}</h3>
+                <p>
+                  {language === "zh"
+                    ? "中转站、私有部署、Ollama、Claude 或 Gemini 接入异常时，再检查协议、Base URL、Headers 和 CORS。"
+                    : "When relays, private deployments, Ollama, Claude, or Gemini behave differently, check protocol, Base URL, headers, and CORS."}
+                </p>
+              </div>
             <div className="connection-details-grid">
               <label className="field-label compact">
                 <span>{t("connections.protocol")}</span>
@@ -1690,13 +1928,8 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
                 <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
               </label>
             </div>
-          </details>
 
-          <details className="connection-details">
-            <summary>
-              <span>{language === "zh" ? "Headers 与本地保存" : "Headers and local storage"}</span>
-              <ChevronRight size={16} />
-            </summary>
+          <div className="connection-details">
             <label className="field-label compact">
               <span>{t("connections.headers")}</span>
               <textarea
@@ -1705,9 +1938,7 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
                 onChange={(event) => setHeadersText(event.target.value)}
                 placeholder='{"HTTP-Referer":"https://example.com"}'
               />
-              <span className="text-xs font-normal leading-5 text-stone-500">
-                {t("connections.headersHelp")}
-              </span>
+              <span className="connection-hint">{t("connections.headersHelp")}</span>
             </label>
             <label className="connection-toggle">
               <input
@@ -1723,7 +1954,10 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
               <span>{t("connections.storeKey")}</span>
             </label>
             <p className="connection-hint">{t("connections.corsHint")}</p>
-          </details>
+          </div>
+            </>
+          ) : null}
+        </div>
 
           {actionFeedback ? (
             <p
@@ -1740,24 +1974,53 @@ function ConnectionCard({ connection }: { connection: ModelConnection }) {
           ) : null}
 
           <div className="connection-actions">
-            <button className="secondary-button" disabled={isWorking} onClick={() => void saveDraft()}>
-              <Save size={16} />
-              <span>{pendingAction === "save" ? actionLabel("save") : t("connections.save")}</span>
-            </button>
-            <button className="secondary-button" disabled={isWorking} onClick={() => void fetchDraftModels()}>
-              <Bot size={16} />
-              <span>{pendingAction === "fetch" ? actionLabel("fetch") : t("connections.fetchModels")}</span>
-            </button>
-            <button className="primary-button" disabled={isWorking} onClick={() => void saveAndTestDraft()}>
-              <ShieldCheck size={16} />
-              <span>{pendingAction === "test" ? actionLabel("test") : t("connections.test")}</span>
-            </button>
+            {activeStep === "provider" ? (
+              <button
+                className="primary-button"
+                disabled={isWorking}
+                onClick={() => setActiveStep("credentials")}
+                type="button"
+              >
+                <ChevronRight size={16} />
+                <span>{language === "zh" ? "下一步：填写 Key" : "Next: add key"}</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  className="secondary-button"
+                  disabled={isWorking}
+                  onClick={() => void saveDraft()}
+                  type="button"
+                >
+                  <Save size={16} />
+                  <span>{pendingAction === "save" ? actionLabel("save") : t("connections.save")}</span>
+                </button>
+                <button
+                  className="secondary-button"
+                  disabled={isWorking}
+                  onClick={() => void fetchDraftModels()}
+                  type="button"
+                >
+                  <Bot size={16} />
+                  <span>{pendingAction === "fetch" ? actionLabel("fetch") : t("connections.fetchModels")}</span>
+                </button>
+                <button
+                  className="primary-button"
+                  disabled={isWorking}
+                  onClick={() => void saveAndTestDraft()}
+                  type="button"
+                >
+                  <ShieldCheck size={16} />
+                  <span>{pendingAction === "test" ? actionLabel("test") : t("connections.test")}</span>
+                </button>
+              </>
+            )}
             {isWorking ? (
-              <button className="secondary-button" onClick={cancelPendingAction}>
+              <button className="secondary-button" onClick={cancelPendingAction} type="button">
                 <span>{language === "zh" ? "停止等待" : "Stop waiting"}</span>
               </button>
             ) : null}
-            <button className="danger-button" disabled={isWorking} onClick={() => void deleteConnection(draft.id)}>
+            <button className="danger-button" disabled={isWorking} onClick={() => void deleteConnection(draft.id)} type="button">
               <Trash2 size={16} />
               <span>{t("connections.delete")}</span>
             </button>

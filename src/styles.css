@@ -447,21 +447,42 @@ body {
 }
 
 .connections-screen {
-  @apply grid gap-4;
+  @apply grid gap-5;
   min-width: 0;
   max-width: 100%;
 }
 
 .connections-hero {
-  @apply grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end sm:p-6;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  @apply grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end sm:p-6;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(246, 200, 95, 0.32);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 249, 239, 0.18), rgba(143, 155, 154, 0.16)),
-    linear-gradient(180deg, rgba(48, 59, 60, 0.74), rgba(20, 12, 24, 0.8));
+    linear-gradient(135deg, rgba(246, 200, 95, 0.16), transparent 34%),
+    linear-gradient(315deg, rgba(185, 67, 255, 0.24), transparent 42%),
+    linear-gradient(180deg, rgba(19, 18, 17, 0.96), rgba(5, 1, 8, 0.98));
   box-shadow:
-    0 28px 90px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    0 30px 90px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 255, 255, 0.045) inset,
+    0 0 42px rgba(185, 67, 255, 0.14);
+}
+
+.connections-hero::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.68), transparent 72%);
+}
+
+.connections-hero > * {
+  position: relative;
+  z-index: 1;
 }
 
 .connections-hero > div:first-child {
@@ -479,6 +500,40 @@ body {
   color: rgba(255, 250, 242, 0.76);
 }
 
+.connections-hero-copy {
+  @apply grid gap-4;
+}
+
+.connection-command-grid {
+  @apply grid gap-2 sm:grid-cols-3;
+  max-width: 780px;
+}
+
+.connection-command-grid > div {
+  @apply grid gap-1 p-3;
+  min-height: 98px;
+  border: 1px solid rgba(246, 200, 95, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(185, 67, 255, 0.08)),
+    rgba(8, 1, 12, 0.74);
+}
+
+.connection-command-grid span {
+  @apply text-xs font-black;
+  color: #f6c85f;
+}
+
+.connection-command-grid strong {
+  @apply text-sm font-black;
+  color: #fff9ef;
+}
+
+.connection-command-grid small {
+  @apply text-xs font-bold leading-5;
+  color: rgba(255, 249, 239, 0.58);
+}
+
 .connection-eyebrow {
   @apply text-xs font-black uppercase;
   letter-spacing: 0;
@@ -487,10 +542,10 @@ body {
 
 .connection-stats {
   @apply inline-grid h-20 w-24 place-items-center justify-self-start px-3 py-2 text-center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(246, 200, 95, 0.34);
   border-radius: 8px;
   color: #fffaf2;
-  background: rgba(9, 13, 16, 0.54);
+  background: rgba(9, 1, 14, 0.74);
 }
 
 .connection-stats span,
@@ -521,10 +576,10 @@ body {
 }
 
 .timeline-pill {
-  @apply inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-bold;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  @apply inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-4 text-sm font-bold;
+  border: 1px solid rgba(246, 200, 95, 0.18);
   color: rgba(255, 250, 242, 0.8);
-  background: rgba(16, 18, 20, 0.7);
+  background: rgba(8, 1, 12, 0.72);
 }
 
 .timeline-pill.connected {
@@ -540,19 +595,19 @@ body {
 .connection-sidecar {
   @apply grid content-between gap-6 p-5 xl:sticky xl:top-4;
   min-height: 260px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(246, 200, 95, 0.3);
   border-radius: 8px;
-  color: #121014;
+  color: #fff9ef;
   background:
-    linear-gradient(180deg, rgba(255, 250, 242, 0.96), rgba(226, 221, 209, 0.9)),
-    #fffaf2;
+    linear-gradient(160deg, rgba(246, 200, 95, 0.14), rgba(185, 67, 255, 0.12)),
+    rgba(10, 3, 14, 0.9);
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.36),
-    0 0 0 1px rgba(255, 255, 255, 0.54) inset;
+    0 24px 70px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
 .connection-sidecar .connection-eyebrow {
-  color: #7d5a16;
+  color: #f6c85f;
 }
 
 .connection-sidecar h2 {
@@ -561,28 +616,53 @@ body {
 
 .connection-sidecar p {
   @apply mt-4 text-sm leading-6;
-  color: rgba(18, 16, 20, 0.68);
+  color: rgba(255, 249, 239, 0.68);
+}
+
+.sidecar-checklist {
+  @apply grid gap-1 rounded-md p-3;
+  border: 1px solid rgba(246, 200, 95, 0.2);
+  background: rgba(5, 1, 8, 0.52);
+}
+
+.sidecar-checklist span {
+  @apply text-xs font-black uppercase;
+  color: #f6c85f;
+}
+
+.sidecar-checklist strong {
+  @apply text-lg font-black;
+  color: #fff9ef;
+}
+
+.sidecar-checklist small {
+  @apply text-xs font-bold leading-5;
+  color: rgba(255, 249, 239, 0.56);
 }
 
 .sidecar-meter {
   @apply grid w-28 place-items-center justify-self-end px-3 py-3 text-center;
   border-radius: 8px;
-  color: #fffaf2;
-  background: #111114;
+  color: #120019;
+  background: linear-gradient(120deg, #fff3b8, #f6c85f);
 }
 
 .connection-card {
   @apply grid gap-4 p-4 sm:p-5;
   min-width: 0;
   max-width: 100%;
+  overflow: hidden;
   border-radius: 8px;
-  color: #121014;
+  border: 1px solid rgba(246, 200, 95, 0.26);
+  color: #fff9ef;
   background:
-    linear-gradient(180deg, rgba(255, 250, 242, 0.98), rgba(238, 233, 222, 0.94)),
-    #fffaf2;
+    linear-gradient(140deg, rgba(246, 200, 95, 0.11), transparent 30%),
+    linear-gradient(315deg, rgba(185, 67, 255, 0.16), transparent 42%),
+    rgba(8, 1, 12, 0.92);
   box-shadow:
-    0 26px 72px rgba(0, 0, 0, 0.36),
-    0 0 0 1px rgba(255, 255, 255, 0.48) inset;
+    0 26px 72px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(255, 255, 255, 0.035) inset,
+    0 0 30px rgba(185, 67, 255, 0.1);
 }
 
 .connection-card:not([open]) {
@@ -637,26 +717,29 @@ body {
 
 .connection-card-header p:not(.connection-eyebrow) {
   @apply mt-1 text-sm font-semibold;
-  color: rgba(18, 16, 20, 0.58);
+  color: rgba(255, 249, 239, 0.58);
   overflow-wrap: anywhere;
 }
 
 .connection-status {
-  @apply inline-flex min-h-10 items-center gap-2 rounded-full px-3 text-xs font-black sm:shrink-0;
+  @apply inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-xs font-black sm:shrink-0;
   align-self: flex-start;
   max-width: 100%;
-  color: rgba(18, 16, 20, 0.7);
-  background: rgba(18, 16, 20, 0.06);
+  border: 1px solid rgba(246, 200, 95, 0.18);
+  color: rgba(255, 249, 239, 0.68);
+  background: rgba(5, 1, 8, 0.44);
 }
 
 .connection-status.connected {
-  color: #163b1c;
-  background: rgba(165, 214, 167, 0.34);
+  border-color: rgba(165, 214, 167, 0.36);
+  color: #dff7df;
+  background: rgba(28, 91, 49, 0.22);
 }
 
 .connection-status.failed {
-  color: #7e123d;
-  background: rgba(255, 67, 127, 0.16);
+  border-color: rgba(255, 67, 127, 0.4);
+  color: #ffc5d8;
+  background: rgba(82, 0, 30, 0.32);
 }
 
 .provider-dock {
@@ -668,9 +751,9 @@ body {
 
 .provider-pill {
   @apply grid min-h-16 min-w-32 shrink-0 content-center rounded-md px-4 py-2 text-left transition;
-  border: 1px solid rgba(18, 16, 20, 0.08);
-  color: rgba(18, 16, 20, 0.72);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(246, 200, 95, 0.18);
+  color: rgba(255, 249, 239, 0.76);
+  background: rgba(5, 1, 8, 0.58);
 }
 
 .provider-pill span {
@@ -679,16 +762,18 @@ body {
 
 .provider-pill small {
   @apply mt-1 text-xs font-bold;
-  color: rgba(18, 16, 20, 0.44);
+  color: rgba(255, 249, 239, 0.46);
 }
 
 .provider-pill:hover,
 .provider-pill.selected {
   border-color: rgba(246, 200, 95, 0.68);
-  color: #110e13;
+  color: #120019;
   transform: translateY(-1px);
   background: linear-gradient(120deg, #fff4bd, #f6c85f);
-  box-shadow: 0 12px 28px rgba(126, 89, 18, 0.18);
+  box-shadow:
+    0 12px 28px rgba(126, 89, 18, 0.18),
+    0 0 22px rgba(246, 200, 95, 0.18);
 }
 
 .connection-form-grid,
@@ -701,39 +786,132 @@ body {
   min-width: 0;
 }
 
+.connection-flow {
+  @apply grid gap-4;
+}
+
+.connection-step-shell {
+  @apply grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start;
+}
+
+.connection-step-tabs {
+  @apply grid gap-2 md:grid-cols-3;
+}
+
+.connection-step-tab {
+  @apply grid min-h-24 gap-2 rounded-md p-3 text-left transition;
+  border: 1px solid rgba(246, 200, 95, 0.17);
+  color: rgba(255, 249, 239, 0.66);
+  background: rgba(5, 1, 8, 0.52);
+}
+
+.connection-step-tab:hover {
+  border-color: rgba(246, 200, 95, 0.42);
+  color: #fff9ef;
+}
+
+.connection-step-tab.selected {
+  border-color: rgba(246, 200, 95, 0.74);
+  color: #fff9ef;
+  background:
+    linear-gradient(145deg, rgba(246, 200, 95, 0.18), rgba(185, 67, 255, 0.12)),
+    rgba(10, 2, 16, 0.86);
+  box-shadow: 0 0 26px rgba(185, 67, 255, 0.12);
+}
+
+.connection-step-index {
+  @apply inline-grid h-7 w-9 place-items-center rounded-sm text-xs font-black;
+  color: #120019;
+  background: linear-gradient(120deg, #fff3b8, #f6c85f);
+}
+
+.connection-step-tab strong {
+  @apply block text-sm font-black;
+}
+
+.connection-step-tab small {
+  @apply mt-1 block text-xs font-bold leading-5;
+  color: rgba(255, 249, 239, 0.52);
+}
+
+.connection-target-preview {
+  @apply grid gap-1 rounded-md p-3;
+  min-width: 0;
+  border: 1px solid rgba(185, 67, 255, 0.28);
+  background: rgba(5, 1, 8, 0.54);
+}
+
+.connection-target-preview span {
+  @apply text-xs font-black uppercase;
+  color: #f6c85f;
+}
+
+.connection-target-preview strong {
+  @apply text-sm font-black;
+  color: #fff9ef;
+}
+
+.connection-target-preview small {
+  @apply text-xs font-bold leading-5;
+  color: rgba(255, 249, 239, 0.52);
+  overflow-wrap: anywhere;
+}
+
+.connection-step-panel {
+  @apply grid gap-4 rounded-md p-4;
+  border: 1px solid rgba(246, 200, 95, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+    rgba(5, 1, 8, 0.54);
+}
+
+.connection-step-copy {
+  @apply max-w-3xl;
+}
+
+.connection-step-copy h3 {
+  @apply mt-1 text-xl font-black leading-tight;
+  color: #fff9ef;
+}
+
+.connection-step-copy p:not(.connection-eyebrow) {
+  @apply mt-2 text-sm leading-6;
+  color: rgba(255, 249, 239, 0.66);
+}
+
 .connection-api-key {
   @apply md:col-span-2;
 }
 
 .connection-card .field-label,
 .api-key-modal .field-label {
-  color: rgba(18, 16, 20, 0.7);
+  color: rgba(255, 249, 239, 0.72);
 }
 
 .connection-card .text-input,
 .api-key-modal .text-input {
-  border-color: rgba(18, 16, 20, 0.12);
-  color: #121014;
-  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(246, 200, 95, 0.18);
+  color: #fff9ef;
+  background: rgba(5, 1, 8, 0.7);
 }
 
 .connection-card .text-input::placeholder,
 .api-key-modal .text-input::placeholder {
-  color: rgba(18, 16, 20, 0.32);
+  color: rgba(255, 249, 239, 0.32);
 }
 
 .connection-card .text-input:focus,
 .api-key-modal .text-input:focus {
-  border-color: rgba(126, 89, 18, 0.5);
+  border-color: rgba(246, 200, 95, 0.7);
   box-shadow:
-    0 0 0 3px rgba(246, 200, 95, 0.18),
-    0 12px 26px rgba(18, 16, 20, 0.08);
+    0 0 0 3px rgba(185, 67, 255, 0.2),
+    0 12px 26px rgba(0, 0, 0, 0.18);
 }
 
 .connection-details {
-  @apply rounded-md px-3 py-2;
-  border: 1px solid rgba(18, 16, 20, 0.08);
-  background: rgba(255, 255, 255, 0.46);
+  @apply rounded-md px-3 py-3;
+  border: 1px solid rgba(246, 200, 95, 0.16);
+  background: rgba(8, 1, 12, 0.62);
 }
 
 .connection-details summary {
@@ -755,12 +933,12 @@ body {
 
 .connection-toggle {
   @apply mt-3 flex items-center gap-2 text-sm font-bold;
-  color: rgba(18, 16, 20, 0.68);
+  color: rgba(255, 249, 239, 0.68);
 }
 
 .connection-hint {
   @apply mt-3 text-xs leading-5;
-  color: rgba(18, 16, 20, 0.48);
+  color: rgba(255, 249, 239, 0.48);
 }
 
 .connection-actions {
@@ -769,33 +947,33 @@ body {
 
 .connection-action-feedback {
   @apply rounded-md px-3 py-2 text-sm font-bold leading-6;
-  border: 1px solid rgba(18, 16, 20, 0.1);
-  background: rgba(255, 255, 255, 0.64);
-  color: rgba(18, 16, 20, 0.68);
+  border: 1px solid rgba(246, 200, 95, 0.18);
+  background: rgba(5, 1, 8, 0.6);
+  color: rgba(255, 249, 239, 0.7);
 }
 
 .connection-action-feedback.success {
   border-color: rgba(38, 117, 79, 0.24);
-  background: rgba(223, 247, 230, 0.8);
-  color: #16613b;
+  background: rgba(22, 97, 59, 0.22);
+  color: #dff7e6;
 }
 
 .connection-action-feedback.error {
-  border-color: rgba(180, 42, 42, 0.24);
-  background: rgba(255, 231, 231, 0.82);
-  color: #9f1f1f;
+  border-color: rgba(255, 67, 127, 0.34);
+  background: rgba(82, 0, 30, 0.34);
+  color: #ffc5d8;
 }
 
 .connection-diagnostics {
   @apply grid gap-2 rounded-md px-3 py-3 text-sm leading-6;
-  border: 1px solid rgba(180, 132, 38, 0.28);
-  background: linear-gradient(135deg, rgba(255, 247, 216, 0.92), rgba(255, 255, 255, 0.78));
-  color: rgba(54, 39, 12, 0.88);
+  border: 1px solid rgba(246, 200, 95, 0.28);
+  background: linear-gradient(135deg, rgba(246, 200, 95, 0.14), rgba(185, 67, 255, 0.1));
+  color: rgba(255, 249, 239, 0.76);
 }
 
 .connection-diagnostics strong {
   @apply text-sm;
-  color: #5c3b04;
+  color: #f6c85f;
 }
 
 .connection-diagnostics ul {
@@ -804,7 +982,7 @@ body {
 }
 
 .connection-diagnostics li::marker {
-  color: #b87908;
+  color: #f6c85f;
 }
 
 .modal-scrim {
@@ -818,13 +996,15 @@ body {
 .api-key-modal {
   @apply grid w-full max-w-3xl gap-4 p-4 sm:p-5;
   border-radius: 8px;
-  color: #121014;
+  border: 1px solid rgba(246, 200, 95, 0.32);
+  color: #fff9ef;
   background:
-    linear-gradient(180deg, rgba(255, 250, 242, 0.98), rgba(238, 233, 222, 0.95)),
-    #fffaf2;
+    linear-gradient(135deg, rgba(246, 200, 95, 0.12), transparent 34%),
+    linear-gradient(315deg, rgba(185, 67, 255, 0.22), transparent 42%),
+    rgba(8, 1, 12, 0.96);
   box-shadow:
     0 30px 90px rgba(0, 0, 0, 0.56),
-    0 0 0 1px rgba(255, 255, 255, 0.54) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
     0 0 60px rgba(185, 67, 255, 0.22);
 }
 
@@ -832,26 +1012,33 @@ body {
   @apply mt-1 text-3xl font-black leading-none;
 }
 
+.api-key-modal .connection-card-header {
+  cursor: default;
+}
+
 .api-key-modal .connection-card-header p:not(.connection-eyebrow) {
   @apply mt-2 text-sm leading-6;
-  color: rgba(18, 16, 20, 0.62);
+  color: rgba(255, 249, 239, 0.62);
 }
 
-.connection-card .secondary-button {
-  border-color: rgba(18, 16, 20, 0.12);
-  color: rgba(18, 16, 20, 0.72);
-  background: rgba(255, 255, 255, 0.72);
+.connection-card .secondary-button,
+.api-key-modal .secondary-button {
+  border-color: rgba(246, 200, 95, 0.2);
+  color: rgba(255, 249, 239, 0.74);
+  background: rgba(5, 1, 8, 0.6);
 }
 
-.connection-card .secondary-button:hover {
-  color: #121014;
-  border-color: rgba(126, 89, 18, 0.44);
-  box-shadow: 0 10px 24px rgba(18, 16, 20, 0.1);
+.connection-card .secondary-button:hover,
+.api-key-modal .secondary-button:hover {
+  color: #fff9ef;
+  border-color: rgba(246, 200, 95, 0.5);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
 }
 
-.connection-card .danger-button {
-  color: #8f1748;
-  background: rgba(255, 67, 127, 0.08);
+.connection-card .danger-button,
+.api-key-modal .danger-button {
+  color: #ffc5d8;
+  background: rgba(255, 67, 127, 0.1);
 }
 
 .field-label {
