@@ -222,10 +222,10 @@ function noticeTone(message: string) {
 }
 
 function noticeDurationMs(tone: NoticeTone) {
-  if (tone === "success") return 4_200;
-  if (tone === "error") return 7_000;
-  if (tone === "warning") return 6_000;
-  return 5_000;
+  if (tone === "success") return 7_000;
+  if (tone === "error") return 11_000;
+  if (tone === "warning") return 9_000;
+  return 8_000;
 }
 
 function Header() {
