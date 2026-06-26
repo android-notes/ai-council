@@ -102,12 +102,7 @@ export async function handleRelayRequest(
     );
   }
 
-  const upstreamRequest = new Request(route.url, {
-    body: request.method === "GET" ? undefined : request.body,
-    headers: forwardHeaders(request.headers),
-    method: request.method,
-    redirect: "manual",
-  });
+  const upstreamRequest = new Request(route.url, buildUpstreamRequestInit(request));
 
   const upstreamResponse = await fetch(upstreamRequest);
   const responseHeaders = forwardResponseHeaders(upstreamResponse.headers);
@@ -138,6 +133,22 @@ function resolveProviderRoute(requestUrl: URL, options: RelayOptions) {
   upstream.search = requestUrl.search;
 
   return { provider, url: upstream.toString() };
+}
+
+function buildUpstreamRequestInit(request: Request) {
+  const body = request.method === "GET" ? undefined : request.body;
+  const init: RequestInit & { duplex?: "half" } = {
+    body,
+    headers: forwardHeaders(request.headers),
+    method: request.method,
+    redirect: "manual",
+  };
+
+  if (body) {
+    init.duplex = "half";
+  }
+
+  return init;
 }
 
 function pathSegments(requestUrl: URL, options: RelayOptions) {
