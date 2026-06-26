@@ -43,6 +43,8 @@ Model discovery uses the selected OpenAI-compatible connection's `/models` endpo
 
 Public CORS proxies are not recommended because they can expose keys and request content.
 
+The included Cloudflare Worker relay is intended for self-hosting. It forwards requests only to a fixed provider allowlist and does not store API keys, but the Worker operator still controls the relay endpoint and can see traffic metadata in platform logs. For public deployments, set a `RELAY_TOKEN` secret or keep the relay URL private.
+
 ## Sensitive Decisions
 
 AI Council is an analysis aid, not a professional advisor. Legal, medical, financial, and other high-stakes outputs should be treated as preparation material for human review, not final advice.

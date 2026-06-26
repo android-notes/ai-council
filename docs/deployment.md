@@ -44,3 +44,50 @@ The v1 app does not require a backend for core features:
 - Posters, Markdown, and JSON exports are generated locally.
 
 For real model calls, users should provide their own API key, local model endpoint, relay, or self-hosted proxy.
+
+## Cloudflare Worker Relay
+
+The repository includes a restricted Cloudflare Worker relay for users who need a browser CORS bridge.
+
+It is not an open proxy. It only forwards these fixed provider routes:
+
+- `/openai/*` -> `https://api.openai.com/*`
+- `/deepseek/*` -> `https://api.deepseek.com/*`
+- `/anthropic/*` -> `https://api.anthropic.com/*`
+- `/gemini/*` -> `https://generativelanguage.googleapis.com/*`
+- `/openrouter/*` -> `https://openrouter.ai/*`
+
+Deploy:
+
+```bash
+npx wrangler login
+npm run deploy:worker
+```
+
+Optional production hardening:
+
+```bash
+npx wrangler secret put RELAY_TOKEN
+```
+
+If `RELAY_TOKEN` is set, add this custom header in AI Council connections:
+
+```json
+{"x-ai-council-relay-token":"your-token"}
+```
+
+Example Base URLs:
+
+```text
+https://ai-council-relay.your-subdomain.workers.dev/openai/v1
+https://ai-council-relay.your-subdomain.workers.dev/deepseek
+https://ai-council-relay.your-subdomain.workers.dev/anthropic/v1
+https://ai-council-relay.your-subdomain.workers.dev/gemini/v1beta
+https://ai-council-relay.your-subdomain.workers.dev/openrouter/api/v1
+```
+
+Health check:
+
+```text
+https://ai-council-relay.your-subdomain.workers.dev/health
+```
