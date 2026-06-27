@@ -2299,3 +2299,166 @@ body {
 .conversation-message-meta strong {
   color: #262626;
 }
+
+.meeting-layout {
+  @apply grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px];
+}
+
+.meeting-room-panel {
+  @apply overflow-hidden;
+}
+
+.meeting-console-panel {
+  @apply p-4 lg:sticky lg:top-4 lg:self-start;
+}
+
+.meeting-chat {
+  @apply max-h-[70vh] overflow-y-auto p-3 sm:p-5;
+  background:
+    linear-gradient(90deg, rgba(250, 204, 21, 0.14), transparent 46%),
+    linear-gradient(rgba(212, 212, 212, 0.32) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 212, 212, 0.26) 1px, transparent 1px),
+    #ededed;
+  background-size: auto, 42px 42px, 42px 42px, auto;
+}
+
+.meeting-chat-marker {
+  @apply mx-auto mb-4 w-fit rounded-md px-3 py-1 text-xs font-semibold uppercase;
+  border: 1px solid rgba(212, 212, 212, 0.95);
+  color: #737373;
+  background: rgba(250, 250, 250, 0.88);
+}
+
+.chat-message {
+  @apply grid grid-cols-[36px_minmax(0,1fr)] items-start gap-2 pb-4 sm:grid-cols-[42px_minmax(0,1fr)] sm:gap-3;
+}
+
+.chat-avatar {
+  @apply grid h-9 w-9 place-items-center rounded-md text-sm font-black sm:h-10 sm:w-10;
+  border: 1px solid rgba(212, 212, 212, 0.95);
+  color: #262626;
+  background: #fafafa;
+  box-shadow: 0 10px 24px rgba(38, 38, 38, 0.08);
+}
+
+.chat-bubble {
+  @apply min-w-0 rounded-md px-3 py-3 sm:px-4;
+  max-width: 860px;
+  border: 1px solid rgba(212, 212, 212, 0.95);
+  color: #262626;
+  background: rgba(250, 250, 250, 0.96);
+  box-shadow: 0 14px 34px rgba(38, 38, 38, 0.08);
+}
+
+.chat-message.host .chat-avatar,
+.chat-message.host .chat-bubble {
+  border-color: rgba(250, 204, 21, 0.58);
+  background: #fff7d6;
+}
+
+.chat-message.active .chat-bubble {
+  border-color: rgba(251, 146, 60, 0.7);
+  box-shadow: 0 16px 36px rgba(234, 88, 12, 0.14);
+}
+
+.chat-message.failed .chat-avatar,
+.chat-message.failed .chat-bubble {
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.chat-bubble-meta {
+  @apply mb-2 flex flex-wrap items-center gap-2 text-xs uppercase;
+  letter-spacing: 0;
+  color: #a16207;
+}
+
+.chat-bubble-meta strong {
+  @apply text-sm normal-case;
+  color: #262626;
+}
+
+.chat-bubble-meta span {
+  @apply rounded-md px-2 py-0.5;
+  border: 1px solid rgba(212, 212, 212, 0.9);
+  background: rgba(245, 245, 245, 0.72);
+}
+
+.chat-message.host .chat-bubble-meta span {
+  border-color: rgba(250, 204, 21, 0.55);
+  background: rgba(250, 204, 21, 0.2);
+}
+
+.chat-content {
+  @apply relative pr-2;
+}
+
+.chat-content .markdown-content {
+  color: #404040;
+}
+
+.chat-content .markdown-content p {
+  @apply whitespace-pre-wrap text-sm leading-7;
+}
+
+.chat-content .markdown-content h1,
+.chat-content .markdown-content h2,
+.chat-content .markdown-content h3 {
+  color: #262626;
+}
+
+.stream-cursor {
+  @apply absolute bottom-1 inline-block h-4 w-1 rounded-full;
+  right: -0.15rem;
+  background: #ea580c;
+  animation: cursorBlink 0.95s steps(2, start) infinite;
+}
+
+.typing-dots {
+  @apply flex h-7 items-center gap-1.5;
+}
+
+.typing-dots span {
+  @apply h-2 w-2 rounded-full;
+  background: #f97316;
+  animation: typingPulse 1.05s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.meeting-waiting {
+  @apply grid justify-items-center rounded-md p-4;
+  border: 1px dashed rgba(212, 212, 212, 0.95);
+  background: rgba(250, 250, 250, 0.8);
+}
+
+@keyframes typingPulse {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes cursorBlink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  46%,
+  100% {
+    opacity: 0;
+  }
+}

@@ -322,6 +322,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
 
         const connection = findConnection(role.modelConnectionId, get().connections);
+        const previousMessages = session.messages;
+        const streamingMessage = createMessage(role, stage, "");
+        session = appendMessage(session, streamingMessage);
+        set({ currentSession: session });
 
         try {
           const response = await askCompleteWithRetry({
@@ -332,12 +336,16 @@ export const useAppStore = create<AppState>((set, get) => ({
             context,
             stage,
             language,
-            previousMessages: session.messages,
+            previousMessages,
             maxOutputTokens: depthLimits[depth].maxOutputTokens,
+            onStreamContent: (content) => {
+              session = updateMessageContent(session, streamingMessage.id, content);
+              set({ currentSession: session });
+            },
           }, get().fallbackPolicy === "fast" ? 0 : 1);
-          session = appendMessage(session, createMessage(role, stage, response.content));
+          session = updateMessageContent(session, streamingMessage.id, response.content);
         } catch (error) {
-          session = await handleModelFailure(session, role, stage, error);
+          session = await handleModelFailure(session, role, stage, error, streamingMessage.id);
         }
 
         callCount += 1;
@@ -591,17 +599,47 @@ function appendMessage(session: CouncilSession, message: CouncilSession["message
   };
 }
 
+function updateMessageContent(session: CouncilSession, messageId: string, content: string) {
+  return {
+    ...session,
+    messages: session.messages.map((message) =>
+      message.id === messageId ? { ...message, content } : message
+    ),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function replaceMessage(
+  session: CouncilSession,
+  messageId: string,
+  nextMessage: CouncilSession["messages"][number]
+) {
+  return {
+    ...session,
+    messages: session.messages.map((message) =>
+      message.id === messageId ? { ...nextMessage, id: messageId, createdAt: message.createdAt } : message
+    ),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 async function handleModelFailure(
   session: CouncilSession,
   role: CouncilRole,
   stage: CouncilSession["messages"][number]["stage"],
-  error: unknown
+  error: unknown,
+  messageId?: string
 ) {
   const { fallbackPolicy, language } = useAppStore.getState();
   const message =
     error instanceof Error ? error.message : language === "zh" ? "模型调用失败。" : "Model call failed.";
 
   if (fallbackPolicy === "conservative") {
+    const failedMessage = createFailedMessage(
+      role,
+      stage,
+      language === "zh" ? `已暂停：${message}` : `Paused: ${message}`
+    );
     useAppStore.setState({
       stopRequested: true,
       notice:
@@ -609,20 +647,19 @@ async function handleModelFailure(
           ? "模型调用失败，已按保守策略停止后续角色。"
           : "A model call failed, so the conservative policy stopped later roles.",
     });
-    return appendMessage(
-      session,
-      createFailedMessage(role, stage, language === "zh" ? `已暂停：${message}` : `Paused: ${message}`)
-    );
+    return messageId
+      ? replaceMessage(session, messageId, failedMessage)
+      : appendMessage(session, failedMessage);
   }
 
-  return appendMessage(
-    session,
-    createFailedMessage(
-      role,
-      stage,
-      language === "zh" ? `该角色已跳过：${message}` : `Role skipped: ${message}`
-    )
+  const failedMessage = createFailedMessage(
+    role,
+    stage,
+    language === "zh" ? `该角色已跳过：${message}` : `Role skipped: ${message}`
   );
+  return messageId
+    ? replaceMessage(session, messageId, failedMessage)
+    : appendMessage(session, failedMessage);
 }
 
 async function askWithRetry(
@@ -636,6 +673,9 @@ async function askWithRetry(
       return await askModel(request);
     } catch (error) {
       lastError = error;
+      if (attempt < retries) {
+        request.onStreamContent?.("");
+      }
     }
   }
 
@@ -650,6 +690,7 @@ async function askCompleteWithRetry(
   let content = response.content.trim();
 
   if (!response.truncated) {
+    request.onStreamContent?.(content);
     return { ...response, content };
   }
 
@@ -658,6 +699,9 @@ async function askCompleteWithRetry(
       {
         ...request,
         continuationOf: content,
+        onStreamContent: (partialContent) => {
+          request.onStreamContent?.(mergeContinuation(content, partialContent));
+        },
       },
       retries
     );
@@ -665,6 +709,7 @@ async function askCompleteWithRetry(
     if (continuation.truncated) {
       content = appendTruncationNotice(content, request.language);
     }
+    request.onStreamContent?.(content);
     return {
       ...continuation,
       content,
@@ -672,9 +717,11 @@ async function askCompleteWithRetry(
       finishReason: continuation.finishReason ?? response.finishReason,
     };
   } catch {
+    const contentWithNotice = appendTruncationNotice(content, request.language);
+    request.onStreamContent?.(contentWithNotice);
     return {
       ...response,
-      content: appendTruncationNotice(content, request.language),
+      content: contentWithNotice,
     };
   }
 }

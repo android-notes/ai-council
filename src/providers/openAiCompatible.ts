@@ -21,6 +21,7 @@ export async function askOpenAiCompatible(
   request: ModelRequest
 ): Promise<ModelResponse> {
   const endpoint = buildChatCompletionsEndpoint(request.connection.baseUrl);
+  const stream = Boolean(request.onStreamContent);
   const response = await fetchWithTimeout(endpoint, {
     method: "POST",
     headers: buildBearerHeaders(request.connection),
@@ -38,9 +39,13 @@ export async function askOpenAiCompatible(
       ],
       temperature: request.mode === "review" ? 0.85 : 0.45,
       max_tokens: request.maxOutputTokens,
-      stream: false,
+      stream,
     }),
   });
+
+  if (stream && response.ok && response.body) {
+    return readOpenAiChatStream(response, request);
+  }
 
   const json = await safeJson(response);
   if (!response.ok) {
@@ -63,6 +68,156 @@ export async function askOpenAiCompatible(
     truncated: finishReason === "length" || finishReason === "max_tokens",
     raw: json,
   };
+}
+
+async function readOpenAiChatStream(
+  response: Response,
+  request: ModelRequest
+): Promise<ModelResponse> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error("Protocol mismatch: streaming response did not include a readable body.");
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let content = "";
+  let finishReason: string | undefined;
+  const chunks: unknown[] = [];
+
+  const processLine = (rawLine: string) => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith(":") || line.startsWith("event:")) {
+      return;
+    }
+
+    const data = line.startsWith("data:") ? line.slice(5).trim() : line;
+    if (!data || data === "[DONE]") {
+      return;
+    }
+
+    let json: unknown;
+    try {
+      json = JSON.parse(data);
+    } catch {
+      return;
+    }
+
+    chunks.push(json);
+    const delta = extractStreamDelta(json);
+    if (delta) {
+      content += delta;
+      request.onStreamContent?.(content);
+    }
+
+    const nextFinishReason = extractStreamFinishReason(json);
+    if (nextFinishReason) {
+      finishReason = nextFinishReason;
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? "";
+    lines.forEach(processLine);
+  }
+
+  buffer += decoder.decode();
+  if (buffer.trim()) {
+    buffer.split(/\r?\n/).forEach(processLine);
+  }
+
+  const trimmedContent = content.trim();
+  if (!trimmedContent) {
+    throw new Error("Protocol mismatch: stream did not contain chat content.");
+  }
+
+  request.onStreamContent?.(trimmedContent);
+  return {
+    content: trimmedContent,
+    finishReason,
+    truncated: finishReason === "length" || finishReason === "max_tokens",
+    raw: { streamed: true, chunks },
+  };
+}
+
+function extractStreamDelta(json: unknown) {
+  const choice = firstChoice(json);
+  if (!choice) return "";
+
+  if ("delta" in choice && choice.delta && typeof choice.delta === "object") {
+    const delta = choice.delta as Record<string, unknown>;
+    const content = extractContentDelta(delta.content);
+    if (content) return content;
+  }
+
+  if ("message" in choice && choice.message && typeof choice.message === "object") {
+    const message = choice.message as Record<string, unknown>;
+    const content = extractContentDelta(message.content);
+    if (content) return content;
+  }
+
+  if ("text" in choice && typeof choice.text === "string") {
+    return choice.text;
+  }
+
+  return "";
+}
+
+function extractContentDelta(content: unknown): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
+  return content
+    .map((part) => {
+      if (!part || typeof part !== "object") {
+        return "";
+      }
+
+      if ("text" in part && typeof part.text === "string") {
+        return part.text;
+      }
+
+      if ("content" in part && typeof part.content === "string") {
+        return part.content;
+      }
+
+      return "";
+    })
+    .join("");
+}
+
+function extractStreamFinishReason(json: unknown) {
+  const choice = firstChoice(json);
+  if (
+    choice &&
+    "finish_reason" in choice &&
+    typeof choice.finish_reason === "string"
+  ) {
+    return choice.finish_reason;
+  }
+
+  return undefined;
+}
+
+function firstChoice(json: unknown): Record<string, unknown> | undefined {
+  if (!json || typeof json !== "object" || !("choices" in json) || !Array.isArray(json.choices)) {
+    return undefined;
+  }
+
+  const choice = json.choices[0];
+  return choice && typeof choice === "object" ? (choice as Record<string, unknown>) : undefined;
 }
 
 export async function testOpenAiCompatibleConnection(

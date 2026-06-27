@@ -18,6 +18,7 @@ export type ModelRequest = {
   previousMessages: CouncilMessage[];
   maxOutputTokens: number;
   continuationOf?: string;
+  onStreamContent?: (content: string) => void;
 };
 
 export type ModelResponse = {

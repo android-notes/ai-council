@@ -642,14 +642,25 @@ function SessionView() {
     () => new Map(connections.map((connection) => [connection.id, connection.name])),
     [connections]
   );
+  const streamEndRef = useRef<HTMLDivElement>(null);
+  const messageFingerprint =
+    session?.messages
+      .map((message) => `${message.id}:${message.content.length}:${message.failed ? "1" : "0"}`)
+      .join("|") ?? "";
+
+  useEffect(() => {
+    streamEndRef.current?.scrollIntoView({ block: "end" });
+  }, [messageFingerprint, isRunning]);
 
   if (!session) {
     return <EmptyState label={language === "zh" ? "还没有会议。" : "No meeting yet."} />;
   }
 
+  const activeMessageId = isRunning ? session.messages.at(-1)?.id : undefined;
+
   return (
-    <section className="grid gap-4 lg:grid-cols-[1fr_320px]">
-      <div className="surface-panel overflow-hidden">
+    <section className="meeting-layout">
+      <div className="surface-panel meeting-room-panel">
         <div className="meeting-header">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
@@ -669,20 +680,27 @@ function SessionView() {
             </button>
           ) : null}
         </div>
-        <div className="meeting-stream">
+        <div className="meeting-chat" aria-live="polite" aria-busy={isRunning}>
+          <div className="meeting-chat-marker">
+            {language === "zh" ? "AI 会议记录" : "AI meeting transcript"}
+          </div>
           {session.messages.map((message) => (
-            <article className={clsx("message-row", message.failed && "failed")} key={message.id}>
-              <div className="message-meta">
-                <span className="font-medium">{message.roleName}</span>
-                <span>{formatStage(message.stage, language)}</span>
-              </div>
-              <MarkdownContent value={message.content} />
-            </article>
+            <MeetingChatBubble
+              active={message.id === activeMessageId}
+              key={message.id}
+              language={language}
+              message={message}
+            />
           ))}
-          {isRunning ? <div className="loading-line" /> : null}
+          {isRunning && session.messages.length === 0 ? (
+            <div className="meeting-waiting">
+              <TypingDots label={language === "zh" ? "正在连接模型" : "Connecting models"} />
+            </div>
+          ) : null}
+          <div ref={streamEndRef} />
         </div>
       </div>
-      <aside className="surface-panel p-4">
+      <aside className="surface-panel meeting-console-panel">
         <h2 className="text-sm font-semibold">{language === "zh" ? "会议控制台" : "Meeting console"}</h2>
         <div className="mt-4 space-y-3">
           {session.roles.map((role) => (
@@ -695,6 +713,63 @@ function SessionView() {
       </aside>
     </section>
   );
+}
+
+function MeetingChatBubble({
+  active,
+  language,
+  message,
+}: {
+  active: boolean;
+  language: "en" | "zh";
+  message: CouncilSession["messages"][number];
+}) {
+  const hasContent = message.content.trim().length > 0;
+  const isHost = message.roleId === "host";
+
+  return (
+    <article
+      className={clsx(
+        "chat-message",
+        isHost && "host",
+        active && !message.failed && "active",
+        message.failed && "failed"
+      )}
+    >
+      <div className="chat-avatar" aria-hidden="true">
+        {roleInitial(message.roleName)}
+      </div>
+      <div className="chat-bubble">
+        <div className="chat-bubble-meta">
+          <strong>{message.roleName}</strong>
+          <span>{formatStage(message.stage, language)}</span>
+          {message.failed ? <span>{language === "zh" ? "失败" : "Failed"}</span> : null}
+        </div>
+        {hasContent ? (
+          <div className="chat-content">
+            <MarkdownContent value={message.content} />
+            {active ? <span className="stream-cursor" aria-hidden="true" /> : null}
+          </div>
+        ) : (
+          <TypingDots label={language === "zh" ? "正在生成" : "Generating"} />
+        )}
+      </div>
+    </article>
+  );
+}
+
+function TypingDots({ label }: { label: string }) {
+  return (
+    <div className="typing-dots" role="status" aria-label={label}>
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
+function roleInitial(name: string) {
+  return Array.from(name.trim())[0]?.toUpperCase() ?? "A";
 }
 
 function MarkdownContent({ value, className }: { value: string; className?: string }) {
