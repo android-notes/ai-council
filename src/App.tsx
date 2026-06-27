@@ -2076,8 +2076,19 @@ type ConnectionPreset = {
 };
 
 type RelayProviderKey = "openai" | "deepseek" | "anthropic" | "gemini" | "openrouter";
+type RelayRouteKind = "api" | "worker";
+type SameOriginRelayCandidate = {
+  root: string;
+  healthUrl: string;
+  kind: RelayRouteKind;
+};
+type RelayProbeState = {
+  status: "checking" | "available" | "unavailable";
+  candidate?: SameOriginRelayCandidate;
+};
 
-const VERIFIED_NETLIFY_RELAY_ROOT = "https://enchanting-heliotrope-40b6f8.netlify.app";
+const NETLIFY_RELAY_ROOT_PLACEHOLDER = "https://your-site.netlify.app";
+const VERCEL_RELAY_ROOT_PLACEHOLDER = "https://your-project.vercel.app";
 const CLOUDFLARE_RELAY_ROOT_PLACEHOLDER = "https://your-worker.workers.dev";
 
 const relayProviderRoutes: Record<
@@ -2121,6 +2132,54 @@ function RelayUrlGuide({
   onUseUrl: (baseUrl: string) => void;
 }) {
   const providerKey = inferRelayProvider(connection);
+  const sameOriginCandidate = useMemo(() => detectSameOriginRelayCandidate(), []);
+  const [relayProbe, setRelayProbe] = useState<RelayProbeState>(() =>
+    sameOriginCandidate
+      ? { status: "checking", candidate: sameOriginCandidate }
+      : { status: "unavailable" }
+  );
+
+  useEffect(() => {
+    if (!sameOriginCandidate) {
+      return;
+    }
+
+    let disposed = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 3_500);
+
+    fetch(sameOriginCandidate.healthUrl, {
+      headers: { accept: "application/json" },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok || !response.headers.get("content-type")?.includes("json")) {
+          return false;
+        }
+        return isRelayHealthPayload(await response.json());
+      })
+      .then((isAvailable) => {
+        if (disposed) return;
+        setRelayProbe({
+          status: isAvailable ? "available" : "unavailable",
+          candidate: sameOriginCandidate,
+        });
+      })
+      .catch(() => {
+        if (disposed) return;
+        setRelayProbe({ status: "unavailable", candidate: sameOriginCandidate });
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutId);
+      });
+
+    return () => {
+      disposed = true;
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [sameOriginCandidate]);
+
   if (!providerKey) {
     return (
       <p className="connection-hint relay-url-guide-fallback">
@@ -2132,54 +2191,144 @@ function RelayUrlGuide({
   }
 
   const route = relayProviderRoutes[providerKey];
-  const netlifyBaseUrl = `${VERIFIED_NETLIFY_RELAY_ROOT}${route.netlifyPath}`;
+  const detectedBaseUrl =
+    relayProbe.status === "available" && relayProbe.candidate
+      ? buildRelayBaseUrl(relayProbe.candidate.root, route, relayProbe.candidate.kind)
+      : "";
+  const netlifyBaseUrl = `${NETLIFY_RELAY_ROOT_PLACEHOLDER}${route.netlifyPath}`;
+  const vercelBaseUrl = `${VERCEL_RELAY_ROOT_PLACEHOLDER}${route.netlifyPath}`;
   const cloudflareBaseUrl = `${CLOUDFLARE_RELAY_ROOT_PLACEHOLDER}${route.cloudflarePath}`;
-  const isCurrent = trimTrailingSlash(connection.baseUrl) === trimTrailingSlash(netlifyBaseUrl);
+  const isCurrent = Boolean(detectedBaseUrl) && trimTrailingSlash(connection.baseUrl) === trimTrailingSlash(detectedBaseUrl);
+  const canApplyDetectedUrl = Boolean(detectedBaseUrl) && !isCurrent;
 
   return (
-    <div className="relay-url-guide">
+    <div className={clsx("relay-url-guide", relayProbe.status !== "available" && "unavailable")}>
       <div className="relay-url-guide-head">
         <div>
           <strong>
             {language === "zh"
-              ? `${route.label} 推荐 Base URL`
-              : `Recommended ${route.label} Base URL`}
+              ? `${route.label} Base URL`
+              : `${route.label} Base URL`}
           </strong>
           <span>
-            {language === "zh"
-              ? "当前已测通的 Netlify 代理"
-              : "Tested Netlify relay for this deployment"}
+            {relayProbeStatusLabel(language, relayProbe)}
           </span>
         </div>
-        <button
-          className="relay-url-apply"
-          disabled={isCurrent}
-          onClick={() => onUseUrl(netlifyBaseUrl)}
-          type="button"
-        >
-          {isCurrent
-            ? language === "zh"
-              ? "已填入"
-              : "Applied"
-            : language === "zh"
-              ? "填入此 URL"
-              : "Use this URL"}
-        </button>
+        {relayProbe.status === "available" ? (
+          <button
+            className="relay-url-apply"
+            disabled={!canApplyDetectedUrl}
+            onClick={() => detectedBaseUrl && onUseUrl(detectedBaseUrl)}
+            type="button"
+          >
+            {isCurrent
+              ? language === "zh"
+                ? "已填入"
+                : "Applied"
+              : language === "zh"
+                ? "填入当前部署 URL"
+                : "Use current deploy URL"}
+          </button>
+        ) : relayProbe.status === "checking" ? (
+          <button className="relay-url-apply" disabled type="button">
+            {language === "zh" ? "检测中" : "Checking"}
+          </button>
+        ) : null}
       </div>
-      <code className="relay-url-value">{netlifyBaseUrl}</code>
+      {detectedBaseUrl ? (
+        <code className="relay-url-value">{detectedBaseUrl}</code>
+      ) : (
+        <div className="relay-url-patterns">
+          <code className="relay-url-value">{netlifyBaseUrl}</code>
+          <code className="relay-url-value">{vercelBaseUrl}</code>
+          <code className="relay-url-value muted">{cloudflareBaseUrl}</code>
+        </div>
+      )}
+      <p>{relayProbeHelpText(language, relayProbe, route.netlifyPath, route.cloudflarePath)}</p>
       <p>
         {language === "zh"
           ? explainRelayRouteZh(providerKey, route.netlifyPath)
           : explainRelayRouteEn(providerKey, route.netlifyPath)}
       </p>
-      <p>
-        {language === "zh"
-          ? "如果你部署的是自己的 Netlify/Vercel，只替换域名前缀，保留后面的供应商路径。Cloudflare Worker 则使用："
-          : "If you deploy your own Netlify/Vercel relay, replace only the domain prefix and keep the provider path. For Cloudflare Workers, use:"}
-      </p>
-      <code className="relay-url-value muted">{cloudflareBaseUrl}</code>
     </div>
   );
+}
+
+function detectSameOriginRelayCandidate(): SameOriginRelayCandidate | undefined {
+  if (typeof window === "undefined" || window.location.protocol === "file:") {
+    return undefined;
+  }
+
+  const root = window.location.origin;
+  const hostname = window.location.hostname.toLowerCase();
+  if (!root || hostname.endsWith("github.io")) {
+    return undefined;
+  }
+
+  const kind: RelayRouteKind = hostname.endsWith("workers.dev") ? "worker" : "api";
+  return {
+    root,
+    kind,
+    healthUrl: `${root}${kind === "worker" ? "/health" : "/api/health"}`,
+  };
+}
+
+function isRelayHealthPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("ok" in payload)) {
+    return false;
+  }
+
+  const health = payload as Record<string, unknown>;
+  return health.ok === true && health.service === "ai-council-relay";
+}
+
+function buildRelayBaseUrl(
+  root: string,
+  route: (typeof relayProviderRoutes)[RelayProviderKey],
+  kind: RelayRouteKind
+) {
+  return `${trimTrailingSlash(root)}${kind === "worker" ? route.cloudflarePath : route.netlifyPath}`;
+}
+
+function relayProbeStatusLabel(language: "en" | "zh", probe: RelayProbeState) {
+  if (probe.status === "available") {
+    return language === "zh"
+      ? "已检测到当前部署自带 relay"
+      : "Current deployment relay detected";
+  }
+
+  if (probe.status === "checking") {
+    return language === "zh"
+      ? "正在检测当前部署是否包含 relay"
+      : "Checking this deployment for a relay";
+  }
+
+  return language === "zh"
+    ? "未检测到当前页面的同源 relay"
+    : "No same-origin relay detected on this page";
+}
+
+function relayProbeHelpText(
+  language: "en" | "zh",
+  probe: RelayProbeState,
+  netlifyPath: string,
+  cloudflarePath: string
+) {
+  if (probe.status === "available") {
+    return language === "zh"
+      ? "上方 URL 来自当前页面域名，不会使用项目作者的固定部署地址。"
+      : "The URL above uses this page's own domain, not a hard-coded project-owner deployment.";
+  }
+
+  if (probe.candidate) {
+    return language === "zh"
+      ? `当前站点的 health check 没有返回 relay 状态。若你部署在 Netlify/Vercel，请确认 ${netlifyPath} 所在的 /api/health 可访问；Cloudflare Worker 使用 ${cloudflarePath} 这类无 /api 前缀路径。`
+      : `This site did not return relay health. On Netlify/Vercel, confirm that /api/health is reachable for ${netlifyPath}; Cloudflare Workers use no-/api paths such as ${cloudflarePath}.`;
+  }
+
+  return language === "zh"
+    ? "GitHub Pages 是纯静态页面，无法自动知道你单独部署的 Netlify、Vercel 或 Cloudflare Worker 域名。请把下方示例里的域名前缀替换成你自己的部署域名。"
+    : "GitHub Pages is static and cannot know the Netlify, Vercel, or Cloudflare Worker domain you deployed separately. Replace the example domain prefix below with your own deployment domain.";
 }
 
 function inferRelayProvider(connection: ModelConnection): RelayProviderKey | undefined {

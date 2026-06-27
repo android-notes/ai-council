@@ -80,6 +80,8 @@ https://your-project.vercel.app/api/health
 https://your-site.netlify.app/api/health
 ```
 
+When AI Council is opened from that same Netlify or Vercel deployment, the model setup screen checks `/api/health` on the current origin and can fill the provider Base URL automatically. When AI Council is opened from GitHub Pages, the page cannot discover a separately deployed relay domain, so replace the example domain with your own deployment URL.
+
 ### Cloudflare
 
 ```text

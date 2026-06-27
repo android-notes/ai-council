@@ -52,6 +52,8 @@ Some model providers and aggregators block browser CORS. If direct browser calls
 
 The relay still uses each user's own API key. Do not put model API keys into GitHub, Vercel, Netlify, or Cloudflare project settings.
 
+AI Council does not hard-code any public relay URL. When the app is opened from a Netlify or Vercel deployment of this repository, it checks the current site at `/api/health` and can fill Base URLs with that deployment's own domain. GitHub Pages is static and cannot discover a separately deployed relay domain; paste your own Netlify, Vercel, or Cloudflare Worker domain in that case.
+
 ### One-Click Deploy
 
 [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fandroid-notes%2Fai-council&project-name=ai-council&repository-name=ai-council&demo-title=AI%20Council&demo-url=https%3A%2F%2Fandroid-notes.github.io%2Fai-council%2F)
@@ -123,6 +125,8 @@ Cloudflare can also be deployed from GitHub Actions after adding `CLOUDFLARE_API
 ### Base URL Patterns
 
 Use the deployed relay domain as the prefix.
+
+If you open AI Council from your own Netlify or Vercel deployment, the model setup screen detects the current origin and offers to fill these URLs automatically. If you open the GitHub Pages version, replace the example domain with your own deployed relay domain.
 
 For Vercel or Netlify:
 
