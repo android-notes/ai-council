@@ -184,7 +184,7 @@ function role(
   };
 }
 
-function buildRolePrompt(
+export function buildRolePrompt(
   name: string,
   duty: string,
   topic: string,

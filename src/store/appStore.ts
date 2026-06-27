@@ -22,6 +22,7 @@ import {
   saveSettings,
 } from "../lib/storage";
 import {
+  buildRolePrompt,
   composeResult,
   createEmptySession,
   createFailedMessage,
@@ -246,10 +247,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   updateRole: (id, patch) => {
+    const { language, mode, topic } = get();
     set({
-      roles: get().roles.map((role) =>
-        role.id === id ? { ...role, ...patch } : role
-      ),
+      roles: get().roles.map((role) => {
+        if (role.id !== id) {
+          return role;
+        }
+
+        const nextRole = { ...role, ...patch };
+        const shouldSyncPrompt =
+          !("prompt" in patch) &&
+          ("name" in patch || "duty" in patch) &&
+          isDefaultRolePrompt(role.prompt, role.name, role.duty, topic, mode, language);
+
+        return shouldSyncPrompt
+          ? {
+              ...nextRole,
+              prompt: buildRolePrompt(nextRole.name, nextRole.duty, topic, mode, language),
+            }
+          : nextRole;
+      }),
     });
   },
 
@@ -565,6 +582,21 @@ function hasUsableModelSeat(connections: ModelConnection[]) {
 function rolesHaveUsableSeats(roles: CouncilRole[], connections: ModelConnection[]) {
   const usableIds = new Set(usableModelSeats(connections).map((connection) => connection.id));
   return roles.length > 0 && roles.every((role) => usableIds.has(role.modelConnectionId));
+}
+
+function isDefaultRolePrompt(
+  prompt: string,
+  name: string,
+  duty: string,
+  topic: string,
+  mode: AppMode,
+  language: Language
+) {
+  return normalizePrompt(prompt) === normalizePrompt(buildRolePrompt(name, duty, topic, mode, language));
+}
+
+function normalizePrompt(prompt: string) {
+  return prompt.replace(/\s+/g, " ").trim();
 }
 
 function keyRequiredMessage(language: Language) {
