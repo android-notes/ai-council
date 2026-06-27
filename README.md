@@ -159,13 +159,11 @@ API key: paste your own DeepSeek key in the AI Council UI
 2. Go to **Models** or start a meeting until the API key modal appears.
 3. Add or edit a model connection.
 4. Pick the provider preset, or set the protocol manually.
-5. Expand **Endpoint and protocol**.
-6. Paste the relay **Base URL** from the table above.
+5. In **Base URL**, use the in-app relay helper. It shows the recommended Netlify/Vercel URL for the selected provider and explains the route suffix.
+6. For DeepSeek through this relay, the suffix is `/api/deepseek`: `/api` is the Netlify/Vercel relay entry and `/deepseek` tells the relay to forward to DeepSeek. AI Council appends `/chat/completions` and `/models` automatically.
 7. Enter the model ID.
 8. Paste your provider API key in the AI Council UI.
 9. Click **Test connection**.
-
-The Base URL field is intentionally hidden inside **Endpoint and protocol** so the first-run setup stays simple.
 
 ## Release Checklist
 

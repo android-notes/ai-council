@@ -1014,6 +1014,63 @@ body {
   color: rgba(255, 249, 239, 0.48);
 }
 
+.relay-url-guide {
+  @apply mt-3 grid gap-3 rounded-md p-3;
+  grid-column: 1 / -1;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  color: #262626;
+  background: #fffbeb;
+  box-shadow: 0 10px 24px rgba(202, 138, 4, 0.12);
+}
+
+.relay-url-guide-head {
+  @apply flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between;
+}
+
+.relay-url-guide-head strong {
+  @apply block text-sm font-black;
+  color: #262626;
+}
+
+.relay-url-guide-head span,
+.relay-url-guide p {
+  @apply text-xs font-semibold leading-5;
+  color: #713f12;
+}
+
+.relay-url-value {
+  @apply block overflow-x-auto rounded-md px-3 py-2 text-xs font-black leading-5;
+  border: 1px solid rgba(202, 138, 4, 0.28);
+  color: #262626;
+  background: #ffffff;
+}
+
+.relay-url-value.muted {
+  color: #525252;
+  background: #fafafa;
+}
+
+.relay-url-apply {
+  @apply inline-flex h-9 shrink-0 items-center justify-center rounded-md px-3 text-xs font-black transition;
+  border: 1px solid rgba(202, 138, 4, 0.45);
+  color: #262626;
+  background: #facc15;
+}
+
+.relay-url-apply:hover:not(:disabled) {
+  border-color: rgba(251, 146, 60, 0.58);
+  background: #fb923c;
+}
+
+.relay-url-apply:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+
+.relay-url-guide-fallback {
+  grid-column: 1 / -1;
+}
+
 .connection-actions {
   @apply grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap;
 }

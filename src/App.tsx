@@ -1312,8 +1312,12 @@ function ApiKeyModal() {
                 <label className="field-label compact">
                   <span>{t("connections.baseUrl")}</span>
                   <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
-                  <span className="connection-hint">{t("connections.baseUrlHelp")}</span>
                 </label>
+                <RelayUrlGuide
+                  connection={draft}
+                  language={language}
+                  onUseUrl={(baseUrl) => setDraft({ ...draft, baseUrl })}
+                />
               </div>
               <div className="connection-details">
                 <label className="field-label compact">
@@ -1875,8 +1879,12 @@ function ConnectionCard({
                 <label className="field-label compact">
                   <span>{t("connections.baseUrl")}</span>
                   <input className="text-input" value={draft.baseUrl} onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })} />
-                  <span className="connection-hint">{t("connections.baseUrlHelp")}</span>
                 </label>
+                <RelayUrlGuide
+                  connection={draft}
+                  language={language}
+                  onUseUrl={(baseUrl) => setDraft({ ...draft, baseUrl })}
+                />
               </div>
               <div className="connection-details">
                 <label className="field-label compact">
@@ -1991,6 +1999,164 @@ type ConnectionPreset = {
   headersText?: string;
   matches: (connection: ModelConnection) => boolean;
 };
+
+type RelayProviderKey = "openai" | "deepseek" | "anthropic" | "gemini" | "openrouter";
+
+const VERIFIED_NETLIFY_RELAY_ROOT = "https://enchanting-heliotrope-40b6f8.netlify.app";
+const CLOUDFLARE_RELAY_ROOT_PLACEHOLDER = "https://your-worker.workers.dev";
+
+const relayProviderRoutes: Record<
+  RelayProviderKey,
+  { label: string; netlifyPath: string; cloudflarePath: string }
+> = {
+  openai: {
+    label: "OpenAI",
+    netlifyPath: "/api/openai/v1",
+    cloudflarePath: "/openai/v1",
+  },
+  deepseek: {
+    label: "DeepSeek",
+    netlifyPath: "/api/deepseek",
+    cloudflarePath: "/deepseek",
+  },
+  anthropic: {
+    label: "Anthropic",
+    netlifyPath: "/api/anthropic/v1",
+    cloudflarePath: "/anthropic/v1",
+  },
+  gemini: {
+    label: "Gemini",
+    netlifyPath: "/api/gemini/v1beta",
+    cloudflarePath: "/gemini/v1beta",
+  },
+  openrouter: {
+    label: "OpenRouter",
+    netlifyPath: "/api/openrouter/api/v1",
+    cloudflarePath: "/openrouter/api/v1",
+  },
+};
+
+function RelayUrlGuide({
+  connection,
+  language,
+  onUseUrl,
+}: {
+  connection: ModelConnection;
+  language: "en" | "zh";
+  onUseUrl: (baseUrl: string) => void;
+}) {
+  const providerKey = inferRelayProvider(connection);
+  if (!providerKey) {
+    return (
+      <p className="connection-hint relay-url-guide-fallback">
+        {language === "zh"
+          ? "如果你使用自建代理，请填写代理文档给出的完整 Base URL。OpenAI-compatible 协议会自动拼接 /chat/completions 和 /models。"
+          : "For a custom relay, enter the full Base URL from that relay. The OpenAI-compatible protocol automatically appends /chat/completions and /models."}
+      </p>
+    );
+  }
+
+  const route = relayProviderRoutes[providerKey];
+  const netlifyBaseUrl = `${VERIFIED_NETLIFY_RELAY_ROOT}${route.netlifyPath}`;
+  const cloudflareBaseUrl = `${CLOUDFLARE_RELAY_ROOT_PLACEHOLDER}${route.cloudflarePath}`;
+  const isCurrent = trimTrailingSlash(connection.baseUrl) === trimTrailingSlash(netlifyBaseUrl);
+
+  return (
+    <div className="relay-url-guide">
+      <div className="relay-url-guide-head">
+        <div>
+          <strong>
+            {language === "zh"
+              ? `${route.label} 推荐 Base URL`
+              : `Recommended ${route.label} Base URL`}
+          </strong>
+          <span>
+            {language === "zh"
+              ? "当前已测通的 Netlify 代理"
+              : "Tested Netlify relay for this deployment"}
+          </span>
+        </div>
+        <button
+          className="relay-url-apply"
+          disabled={isCurrent}
+          onClick={() => onUseUrl(netlifyBaseUrl)}
+          type="button"
+        >
+          {isCurrent
+            ? language === "zh"
+              ? "已填入"
+              : "Applied"
+            : language === "zh"
+              ? "填入此 URL"
+              : "Use this URL"}
+        </button>
+      </div>
+      <code className="relay-url-value">{netlifyBaseUrl}</code>
+      <p>
+        {language === "zh"
+          ? explainRelayRouteZh(providerKey, route.netlifyPath)
+          : explainRelayRouteEn(providerKey, route.netlifyPath)}
+      </p>
+      <p>
+        {language === "zh"
+          ? "如果你部署的是自己的 Netlify/Vercel，只替换域名前缀，保留后面的供应商路径。Cloudflare Worker 则使用："
+          : "If you deploy your own Netlify/Vercel relay, replace only the domain prefix and keep the provider path. For Cloudflare Workers, use:"}
+      </p>
+      <code className="relay-url-value muted">{cloudflareBaseUrl}</code>
+    </div>
+  );
+}
+
+function inferRelayProvider(connection: ModelConnection): RelayProviderKey | undefined {
+  const name = connection.name.toLowerCase();
+  const model = connection.model.toLowerCase();
+  const baseUrl = connection.baseUrl.toLowerCase();
+
+  if (name.includes("deepseek") || model.startsWith("deepseek") || baseUrl.includes("deepseek")) {
+    return "deepseek";
+  }
+
+  if (connection.protocol === "anthropic-messages" || name.includes("anthropic") || baseUrl.includes("anthropic")) {
+    return "anthropic";
+  }
+
+  if (connection.protocol === "gemini" || name.includes("gemini") || baseUrl.includes("googleapis")) {
+    return "gemini";
+  }
+
+  if (name.includes("openrouter") || baseUrl.includes("openrouter") || model.includes("/")) {
+    return "openrouter";
+  }
+
+  if (
+    name.includes("openai") ||
+    baseUrl.includes("openai")
+  ) {
+    return "openai";
+  }
+
+  return undefined;
+}
+
+function explainRelayRouteZh(providerKey: RelayProviderKey, netlifyPath: string) {
+  if (providerKey === "deepseek") {
+    return `为什么是 ${netlifyPath}：/api 是 Netlify/Vercel 的代理入口，/deepseek 告诉本项目 relay 转发到 DeepSeek；AI Council 会自动在后面请求 /chat/completions 和 /models。`;
+  }
+
+  return `为什么是 ${netlifyPath}：/api 是 Netlify/Vercel 的代理入口，后面的供应商路径告诉本项目 relay 转发到对应模型服务；AI Council 会按所选协议自动补齐具体接口路径。`;
+}
+
+function explainRelayRouteEn(providerKey: RelayProviderKey, netlifyPath: string) {
+  if (providerKey === "deepseek") {
+    return `Why ${netlifyPath}: /api is the Netlify/Vercel relay entry, and /deepseek tells this relay to forward to DeepSeek. AI Council then appends /chat/completions and /models automatically.`;
+  }
+
+  return `Why ${netlifyPath}: /api is the Netlify/Vercel relay entry, and the provider path tells this relay which model service to forward to. AI Council appends the final protocol endpoints automatically.`;
+}
+
+function trimTrailingSlash(value: string) {
+  return value.trim().replace(/\/+$/, "");
+}
 
 function createDefaultConnection(): ModelConnection {
   return {

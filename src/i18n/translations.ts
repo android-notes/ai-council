@@ -199,7 +199,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "connections.name": "Name",
     "connections.baseUrl": "Base URL",
     "connections.baseUrlHelp":
-      "Use your relay backend URL, not the model provider URL. On Netlify, copy the site Production URL and add your function path, for example https://your-site.netlify.app/.netlify/functions/ai-proxy or the /v1 path your function exposes. On Cloudflare, copy the Worker workers.dev URL or custom domain, for example https://your-worker.your-account.workers.dev/v1.",
+      "Use your relay backend URL, not the model provider URL. Pick a provider to see the exact Netlify/Vercel and Cloudflare route.",
     "connections.apiKey": "API key",
     "connections.model": "Model ID",
     "connections.headers": "Custom headers",
@@ -325,7 +325,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     "connections.name": "名称",
     "connections.baseUrl": "Base URL",
     "connections.baseUrlHelp":
-      "这里填你自己的代理后端地址，不是模型厂商官网。Netlify 在站点的 Production URL 后加函数路径，例如 https://your-site.netlify.app/.netlify/functions/ai-proxy，或你的函数暴露的 /v1 地址。Cloudflare 在 Worker 页面复制 workers.dev 地址或自定义域名，例如 https://your-worker.your-account.workers.dev/v1。",
+      "这里填代理后端地址，不是模型厂商官网。选择供应商后会显示对应的 Netlify/Vercel 和 Cloudflare 路由。",
     "connections.apiKey": "API Key",
     "connections.model": "模型 ID",
     "connections.headers": "自定义 Headers",
